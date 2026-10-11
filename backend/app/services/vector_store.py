@@ -69,6 +69,21 @@ def index_document(document_id: str) -> dict:
             )
         )
 
+    client.delete(
+        collection_name=COLLECTION_NAME,
+        points_selector=models.FilterSelector(
+            filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="document_id",
+                        match=MatchValue(value=document_id),
+                    )
+                ]
+            )
+        ),
+        wait=True,
+    )
+
     client.upsert(
         collection_name=COLLECTION_NAME,
         points=points,

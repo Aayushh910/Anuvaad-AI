@@ -1,4 +1,3 @@
-
 import json
 from pathlib import Path
 
@@ -28,34 +27,56 @@ def chunk_document(document_id: str) -> dict:
         )
 
     markdown = markdown_path.read_text(encoding="utf-8")
-    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-
-    chunks = splitter.create_documents(
-        texts=[markdown],
-        metadatas=[
-            {
-                "document_id": document_id,
-                "filename": metadata["original_filename"],
-                "source_file": markdown_path.name,
-            }
-        ],
+    metadata = json.loads(
+        metadata_path.read_text(encoding="utf-8")
     )
 
+    # Load the page-aware text extracted from Docling.
+    pages_path = PROCESSED_DIR / f"{document_id}.pages.json"
+
+    if not pages_path.exists():
+        raise FileNotFoundError(
+            f"Page-aware extraction not found: {pages_path.name}. "
+            "Reprocess the PDF before chunking."
+        )
+
+    pages = json.loads(pages_path.read_text(encoding="utf-8"))
     records = []
 
-    for index, chunk in enumerate(chunks):
-        records.append(
-            {
-                "chunk_id": f"{document_id}_{index}",
-                "document_id": document_id,
-                "chunk_index": index,
-                "text": chunk.page_content,
-                "metadata": {
-                    **chunk.metadata,
-                    "start_index": chunk.metadata.get("start_index", 0),
-                },
-            }
+    for page in pages:
+        page_number = page["page_number"]
+        page_text = page["text"].strip()
+
+        if not page_text:
+            continue
+
+        chunks = splitter.create_documents(
+            texts=[page_text],
+            metadatas=[
+                {
+                    "document_id": document_id,
+                    "filename": metadata["original_filename"],
+                    "source_file": markdown_path.name,
+                    "page_number": page_number,
+                }
+            ],
         )
+
+        for chunk in chunks:
+            records.append(
+                {
+                    "chunk_id": f"{document_id}_{len(records)}",
+                    "document_id": document_id,
+                    "chunk_index": len(records),
+                    "text": chunk.page_content,
+                    "metadata": {
+                        **chunk.metadata,
+                        "start_index": chunk.metadata.get(
+                            "start_index", 0
+                        ),
+                    },
+                }
+            )
 
     output_path = CHUNKS_DIR / f"{document_id}.json"
     output_path.write_text(
@@ -69,4 +90,5 @@ def chunk_document(document_id: str) -> dict:
         "chunk_file": output_path.name,
         "chunk_size": 800,
         "chunk_overlap": 120,
+        "page_aware": True,
     }

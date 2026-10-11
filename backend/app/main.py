@@ -109,9 +109,45 @@ def upload_pdf(file: UploadFile = File(...)):
         markdown = result.document.export_to_markdown()
         page_count = len(result.document.pages)
 
+        # Extract text with actual page numbers from Docling.
+        page_texts = {}
+
+        for item, _ in result.document.iterate_items():
+            text = getattr(item, "text", None)
+
+            if not text or not text.strip():
+                continue
+
+            provenance = getattr(item, "prov", None) or []
+
+            for source in provenance:
+                page_number = source.page_no
+
+                if page_number not in page_texts:
+                    page_texts[page_number] = []
+
+                page_texts[page_number].append(text.strip())
+
+        pages_data = [
+            {
+                "page_number": page_number,
+                "text": "\n".join(texts),
+            }
+            for page_number, texts in sorted(page_texts.items())
+        ]
+
         # Save the complete extracted Markdown
         markdown_path = PROCESSED_DIR / f"{saved_path.stem}.md"
         markdown_path.write_text(markdown, encoding="utf-8")
+
+        pages_path = PROCESSED_DIR / f"{saved_path.stem}.pages.json"
+
+        pages_path.write_text(
+            json.dumps(pages_data, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+        
 
         # Save document metadata
         metadata = {
