@@ -1,0 +1,30 @@
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+backend/venv/
+backend/.venv/
+.venv/
+venv/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Generated document data and local vector database
+backend/storage/
+
+# Frontend dependencies and builds
+frontend/node_modules/
+frontend/dist/
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+python-multipart
+docling
+langchain-text-splitters
+python-dotenv
+tqdm
+sentence-transformers
+qdrant-client
