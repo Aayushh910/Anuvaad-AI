@@ -18,7 +18,7 @@ QDRANT_DIR.mkdir(parents=True, exist_ok=True)
 client = QdrantClient(path=str(QDRANT_DIR))
 model = SentenceTransformer(EMBEDDING_MODEL)
 
-VECTOR_SIZE = model.get_sentence_embedding_dimension()
+VECTOR_SIZE = model.get_embedding_dimension()
 
 if not client.collection_exists(COLLECTION_NAME):
     client.create_collection(

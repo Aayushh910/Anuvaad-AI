@@ -5,6 +5,8 @@ from uuid import uuid4
 from docling.document_converter import DocumentConverter
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from app.services.answering import generate_answer
 
 from app.core.config import settings
 
@@ -155,3 +157,22 @@ def upload_pdf(file: UploadFile = File(...)):
 
     finally:
         file.file.close()
+
+
+class AskRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=2000)
+    document_id: str | None = None
+    limit: int = Field(default=5, ge=1, le=10)
+
+
+@app.post("/ask")
+def ask_document(request: AskRequest):
+    try:
+        return generate_answer(
+            question=request.question,
+            document_id=request.document_id,
+            limit=request.limit,
+        )
+    except ValueError as exc:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=str(exc))

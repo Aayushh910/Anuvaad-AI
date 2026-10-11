@@ -8,3 +8,5 @@ python-dotenv
 tqdm
 sentence-transformers
 qdrant-client
+langchain-groq
+pytest
