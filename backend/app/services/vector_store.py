@@ -1,10 +1,10 @@
-
 import json
 from pathlib import Path
 from uuid import uuid5, NAMESPACE_URL
 
 from qdrant_client import QdrantClient, models
 from sentence_transformers import SentenceTransformer
+from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 CHUNKS_DIR = BASE_DIR / "storage" / "chunks"
@@ -82,3 +82,52 @@ def index_document(document_id: str) -> dict:
         "embedding_model": EMBEDDING_MODEL,
         "vector_dimensions": VECTOR_SIZE,
     }
+
+
+def search_documents(
+    query: str,
+    limit: int = 5,
+    document_id: str | None = None,
+) -> list[dict]:
+    """Retrieve the most relevant document chunks for a query."""
+
+    if not query.strip():
+        raise ValueError("Search query cannot be empty.")
+
+    # Convert the user's question into an embedding.
+    query_vector = model.encode(
+        query,
+        normalize_embeddings=True,
+    ).tolist()
+
+    # Optionally restrict search to one PDF.
+    query_filter = None
+    if document_id:
+        query_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="document_id",
+                    match=MatchValue(value=document_id),
+                )
+            ]
+        )
+
+    results = client.query_points(
+        collection_name=COLLECTION_NAME,
+        query=query_vector,
+        query_filter=query_filter,
+        limit=limit,
+        with_payload=True,
+    ).points
+
+    return [
+        {
+            "score": point.score,
+            "document_id": point.payload.get("document_id"),
+            "chunk_id": point.payload.get("chunk_id"),
+            "chunk_index": point.payload.get("chunk_index"),
+            "text": point.payload.get("text"),
+            "metadata": point.payload.get("metadata", {}),
+        }
+        for point in results
+    ]
