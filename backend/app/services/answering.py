@@ -46,12 +46,20 @@ def generate_answer(
         except FileNotFoundError:
             document_images = []
 
-        # Analyze at most 3 images on pages relevant to the question.
+                # Prefer images on retrieved pages.
         relevant_images = [
             image
             for image in document_images
             if image.get("page_number") in retrieved_pages
-        ][:3]
+        ]
+
+        # Fallback: if no matching images exist, use the first
+        # few extracted images from this specific document.
+        if not relevant_images:
+            relevant_images = document_images
+
+        # Limit vision API usage.
+        relevant_images = relevant_images[:3]
 
         for image in relevant_images:
             try:

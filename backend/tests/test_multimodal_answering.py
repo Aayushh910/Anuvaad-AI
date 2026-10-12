@@ -117,3 +117,113 @@ def test_generate_answer_keeps_text_only_behavior(monkeypatch):
     assert result["answer"] == "Published in 2025 [S1]."
     assert len(result["sources"]) == 1
     assert result["sources"][0]["content_type"] == "text"
+
+
+def test_image_fallback_when_retrieved_page_has_no_images(monkeypatch):
+    """Use a limited image fallback when retrieved pages have no images."""
+    monkeypatch.setattr(
+        answering,
+        "search_documents",
+        lambda **kwargs: [
+            {
+                "text": "The document discusses sales performance.",
+                "document_id": "doc123",
+                "chunk_id": "chunk1",
+                "chunk_index": 0,
+                "score": 0.9,
+                "metadata": {"page_number": 1, "content_type": "text"},
+            }
+        ],
+    )
+
+    monkeypatch.setattr(
+        answering,
+        "get_document_images",
+        lambda document_id: [
+            {
+                "document_id": document_id,
+                "image_path": f"/fake/chart_{page}.png",
+                "filename": f"chart_{page}.png",
+                "page_number": page,
+                "image_index": 1,
+                "content_type": "image",
+            }
+            for page in range(2, 7)
+        ],
+        raising=False,
+    )
+
+    analyzed_pages = []
+
+    def fake_analyze_image(image_path, question, page_number=None):
+        analyzed_pages.append(page_number)
+        return {
+            "answer": f"Visual evidence from page {page_number}.",
+            "model": "test-vision-model",
+            "page": page_number,
+            "image_filename": image_path.split("/")[-1],
+        }
+
+    monkeypatch.setattr(
+        answering, "analyze_image", fake_analyze_image, raising=False
+    )
+
+    class FakeChatGroq:
+        def __init__(self, **kwargs):
+            pass
+
+        def invoke(self, messages):
+            return SimpleNamespace(content="Sales evidence found [S2].")
+
+    monkeypatch.setattr(answering, "ChatGroq", FakeChatGroq)
+
+    result = answering.generate_answer(
+        question="What does the sales chart show?",
+        document_id="doc123",
+    )
+
+    assert analyzed_pages  # Fallback should find images on other pages.
+    assert len(analyzed_pages) <= 3  # Never analyze more than three images.
+    assert all(page != 1 for page in analyzed_pages)
+    assert any(source["content_type"] == "image" for source in result["sources"])
+
+
+def test_image_fallback_is_not_used_without_document_id(monkeypatch):
+    """Avoid searching images across documents for an unscoped question."""
+    monkeypatch.setattr(
+        answering,
+        "search_documents",
+        lambda **kwargs: [
+            {
+                "text": "Some retrieved text.",
+                "document_id": "doc123",
+                "chunk_id": "chunk1",
+                "chunk_index": 0,
+                "score": 0.9,
+                "metadata": {"page_number": 1, "content_type": "text"},
+            }
+        ],
+    )
+
+    def unexpected_lookup(document_id):
+        raise AssertionError("Image lookup requires a specific document ID")
+
+    monkeypatch.setattr(
+        answering, "get_document_images", unexpected_lookup, raising=False
+    )
+
+    class FakeChatGroq:
+        def __init__(self, **kwargs):
+            pass
+
+        def invoke(self, messages):
+            return SimpleNamespace(content="Answer based on text [S1].")
+
+    monkeypatch.setattr(answering, "ChatGroq", FakeChatGroq)
+
+    result = answering.generate_answer(
+        question="Summarize the document."
+    )
+
+    assert result["answer"] == "Answer based on text [S1]."
+    assert len(result["sources"]) == 1
