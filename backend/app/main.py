@@ -7,8 +7,11 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from app.services.answering import generate_answer
+from app.services.chunking import chunk_document
+from app.services.vector_store import index_document_with_tables
 from app.services.table_extraction import extract_tables
 from app.services.image_extraction import extract_pdf_images
+
 
 from app.core.config import settings
 
@@ -249,6 +252,37 @@ class AskRequest(BaseModel):
     document_id: str | None = None
     limit: int = Field(default=5, ge=1, le=10)
 
+
+@app.post("/api/v1/documents/{document_id}/index", tags=["Documents"])
+def index_pdf_document(document_id: str):
+    try:
+        # Step 1: Create page-aware text chunks.
+        chunk_result = chunk_document(document_id)
+
+        # Step 2: Index text chunks and extracted tables.
+        index_result = index_document_with_tables(document_id)
+
+        return {
+            "status": "success",
+            "document_id": document_id,
+            "chunk_count": chunk_result["chunk_count"],
+            "indexed_chunks": index_result["indexed_chunks"],
+            "indexed_tables": index_result["indexed_tables"],
+            "collection": index_result["collection"],
+            "message": "Document text and tables indexed successfully.",
+        }
+
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Document indexing failed: {type(exc).__name__}: {exc}",
+        ) from exc
 
 @app.post("/ask")
 def ask_document(request: AskRequest):

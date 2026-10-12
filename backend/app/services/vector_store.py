@@ -146,3 +146,19 @@ def search_documents(
         }
         for point in results
     ]
+
+def index_document_with_tables(document_id: str) -> dict:
+    """Index text chunks and extracted tables for one document."""
+
+    # Index regular text chunks first.
+    text_result = index_document(document_id)
+
+    # Index extracted tables into the same Qdrant collection.
+    from app.services.table_indexing import index_document_tables
+
+    table_result = index_document_tables(document_id)
+
+    return {
+        **text_result,
+        "indexed_tables": table_result["indexed_tables"],
+    }
