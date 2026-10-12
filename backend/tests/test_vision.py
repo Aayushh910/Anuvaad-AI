@@ -72,3 +72,44 @@ def test_analyze_image_rejects_unsupported_format(tmp_path):
 def test_analyze_image_rejects_missing_file(tmp_path):
     with pytest.raises(FileNotFoundError):
         vision.analyze_image(str(tmp_path / "missing.png"), "Describe it.")
+
+
+
+def test_analyze_image_rejects_empty_file(tmp_path):
+    image_path = tmp_path / "empty.png"
+    image_path.write_bytes(b"")
+
+    with pytest.raises(ValueError, match="Image file is empty"):
+        vision.analyze_image(str(image_path), "Describe it.")
+
+
+def test_analyze_image_rejects_oversized_file(tmp_path):
+    image_path = tmp_path / "large.png"
+    image_path.write_bytes(b"x" * (vision.MAX_IMAGE_BYTES + 1))
+
+    with pytest.raises(ValueError, match="exceeds the 20 MB limit"):
+        vision.analyze_image(str(image_path), "Describe it.")
+
+
+def test_analyze_image_rejects_empty_model_response(tmp_path, monkeypatch):
+    image_path = tmp_path / "chart.png"
+    image_path.write_bytes(b"fake-png-content")
+
+    class FakeGroq:
+        def __init__(self):
+            self.chat = SimpleNamespace(
+                completions=SimpleNamespace(
+                    create=lambda **kwargs: SimpleNamespace(
+                        choices=[
+                            SimpleNamespace(
+                                message=SimpleNamespace(content="  ")
+                            )
+                        ]
+                    )
+                )
+            )
+
+    monkeypatch.setattr(vision, "Groq", FakeGroq)
+
+    with pytest.raises(RuntimeError, match="vision model returned an empty answer"):
+        vision.analyze_image(str(image_path), "Describe the image.")
