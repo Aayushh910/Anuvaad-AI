@@ -245,6 +245,16 @@ def generate_answer(
         }
 
     if not image_evidence:
+        if _has_insufficient_evidence(initial_answer, len(sources)):
+            return {
+                "answer": (
+                    "I couldn't verify a supported answer from the "
+                    "retrieved document evidence."
+                ),
+                "sources": sources,
+                "model": MODEL_NAME,
+            }
+
         return {
             "answer": initial_answer,
             "sources": sources,
