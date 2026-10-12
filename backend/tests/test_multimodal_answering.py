@@ -227,3 +227,61 @@ def test_image_fallback_is_not_used_without_document_id(monkeypatch):
 
     assert result["answer"] == "Answer based on text [S1]."
     assert len(result["sources"]) == 1
+
+
+def test_text_answerable_question_skips_image_analysis(monkeypatch):
+    monkeypatch.setattr(
+        answering,
+        "search_documents",
+        lambda **kwargs: [
+            {
+                "text": (
+                    "The first official Test match was played at the "
+                    "Melbourne Cricket Ground in March 1877, and Australia "
+                    "won by 45 runs."
+                ),
+                "document_id": "doc123",
+                "chunk_id": "chunk1",
+                "chunk_index": 0,
+                "score": 0.95,
+                "metadata": {
+                    "page_number": 2,
+                    "content_type": "text",
+                },
+            }
+        ],
+    )
+
+    def unexpected_image_lookup(document_id):
+        raise AssertionError(
+            "Images should not be retrieved when text is sufficient."
+        )
+
+    monkeypatch.setattr(
+        answering,
+        "get_document_images",
+        unexpected_image_lookup,
+    )
+
+    class FakeChatGroq:
+        def __init__(self, **kwargs):
+            pass
+
+        def invoke(self, messages):
+            return SimpleNamespace(
+                content=(
+                    "Australia won by 45 runs at the Melbourne "
+                    "Cricket Ground [S1]."
+                )
+            )
+
+    monkeypatch.setattr(answering, "ChatGroq", FakeChatGroq)
+
+    result = answering.generate_answer(
+        question="Where was the first official Test match played, and who won?",
+        document_id="doc123",
+    )
+
+    assert "Australia won by 45 runs" in result["answer"]
+    assert len(result["sources"]) == 1
+    assert result["sources"][0]["content_type"] == "text"
