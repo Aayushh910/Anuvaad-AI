@@ -1,0 +1,82 @@
+[
+    {
+        "query": "What is the earliest definite reference to cricket?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_2"
+        ],
+        "k": 3
+    },
+    {
+        "query": "When was the Marylebone Cricket Club founded?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_2"
+        ],
+        "k": 3
+    },
+    {
+        "query": "What are the dimensions of a cricket pitch?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_6"
+        ],
+        "k": 3
+    },
+    {
+        "query": "Which ball colors are used in Test cricket, ODIs and T20Is?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_6"
+        ],
+        "k": 3
+    },
+    {
+        "query": "How many overs are in the T20 powerplay?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_7"
+        ],
+        "k": 3
+    },
+    {
+        "query": "How many fielders can stand outside the 30-yard circle during the T20 powerplay?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_7"
+        ],
+        "k": 3
+    },
+    {
+        "query": "Where does the first slip stand, and what is its role?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_9"
+        ],
+        "k": 3
+    },
+    {
+        "query": "Who holds the record for the most Test wickets, and how many wickets did he take?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_12"
+        ],
+        "k": 3
+    },
+    {
+        "query": "Which dismissal methods credit a bowler with a wicket?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_16"
+        ],
+        "k": 3
+    },
+    {
+        "query": "What is the difference between a run out and a bowled dismissal regarding bowler credit?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_16"
+        ],
+        "k": 3
+    }
+]

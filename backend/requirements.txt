@@ -11,3 +11,4 @@ qdrant-client
 langchain-groq
 pytest
 PyMuPDF
+rank-bm25==0.2.2

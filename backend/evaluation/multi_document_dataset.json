@@ -1,0 +1,99 @@
+[
+    {
+        "query": "How many legal deliveries make up an over?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_5"
+        ],
+        "k": 3
+    },
+    {
+        "query": "What are the length and width of a cricket pitch?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_6"
+        ],
+        "k": 3
+    },
+    {
+        "query": "How many overs are in the T20 powerplay?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_7"
+        ],
+        "k": 3
+    },
+    {
+        "query": "What resources does the Duckworth-Lewis-Stern method consider?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_8"
+        ],
+        "k": 3
+    },
+    {
+        "query": "Why is synchronization required in a shared producer-consumer buffer?",
+        "document_id": "4b43484a08ed4249b3a4add183621b3e",
+        "relevant_chunk_ids": [
+            "4b43484a08ed4249b3a4add183621b3e_3"
+        ],
+        "k": 3
+    },
+    {
+        "query": "What happens when the producer is faster than the consumer?",
+        "document_id": "4b43484a08ed4249b3a4add183621b3e",
+        "relevant_chunk_ids": [
+            "4b43484a08ed4249b3a4add183621b3e_4"
+        ],
+        "k": 3
+    },
+    {
+        "query": "How do a mutex and semaphores coordinate access to the shared buffer?",
+        "document_id": "4b43484a08ed4249b3a4add183621b3e",
+        "relevant_chunk_ids": [
+            "4b43484a08ed4249b3a4add183621b3e_3"
+        ],
+        "k": 3
+    },
+    {
+        "query": "What happens when the consumer is faster than the producer?",
+        "document_id": "4b43484a08ed4249b3a4add183621b3e",
+        "relevant_chunk_ids": [
+            "4b43484a08ed4249b3a4add183621b3e_4"
+        ],
+        "k": 3
+    },
+    {
+        "query": "Why can reader-preference cause writer starvation?",
+        "document_id": "af64344508d84104bc207449da0f4bcb",
+        "relevant_chunk_ids": [
+            "af64344508d84104bc207449da0f4bcb_8"
+        ],
+        "k": 3
+    },
+    {
+        "query": "How does fair synchronization prevent starvation?",
+        "document_id": "af64344508d84104bc207449da0f4bcb",
+        "relevant_chunk_ids": [
+            "af64344508d84104bc207449da0f4bcb_1",
+            "af64344508d84104bc207449da0f4bcb_2"
+        ],
+        "k": 3
+    },
+    {
+        "query": "How do semaphores compare with pthread_rwlock for reader-writer synchronization?",
+        "document_id": "af64344508d84104bc207449da0f4bcb",
+        "relevant_chunk_ids": [
+            "af64344508d84104bc207449da0f4bcb_9"
+        ],
+        "k": 3
+    },
+    {
+        "query": "What happens when multiple readers access shared data while a writer needs exclusive access?",
+        "document_id": "af64344508d84104bc207449da0f4bcb",
+        "relevant_chunk_ids": [
+            "af64344508d84104bc207449da0f4bcb_1"
+        ],
+        "k": 3
+    }
+]
