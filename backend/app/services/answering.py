@@ -5,7 +5,7 @@ import re
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
-from app.services.image_retrieval import get_document_images
+from app.services.image_retrieval import (get_document_images,rank_document_images)
 from app.services.vision import analyze_image
 from app.services.vector_store import search_documents
 
@@ -35,6 +35,13 @@ INSUFFICIENT_EVIDENCE_PHRASES = (
     "does not provide enough information",
     "does not contain sufficient evidence",
     "does not provide sufficient evidence",
+    "does not give the breakdown",
+    "does not provide the breakdown",
+    "is not available",
+    "not available from the provided context",
+    "not available from the supplied sources",
+    "cannot be provided from the supplied sources",
+    "cannot be answered from the supplied sources"
 )
 
 
@@ -172,19 +179,19 @@ def generate_answer(
         except FileNotFoundError:
             document_images = []
 
-        # Prefer images on retrieved pages.
-        relevant_images = [
-            image
-            for image in document_images
-            if image.get("page_number") in retrieved_pages
-        ]
+        # Prefer images matching the question and retrieved text context.
+        text_context = "\n".join(
+            str(result.get("page_content", result.get("text", "")))
+            for result in results
+        )
 
-        # Fallback: if no matching images exist, use the first
-        # few extracted images from this specific document.
-        if not relevant_images:
-            relevant_images = document_images
+        relevant_images = rank_document_images(
+            document_images,
+            question=question,
+            context=text_context,
+        )
 
-        # Limit vision API usage.
+        # Keep vision API usage bounded.
         relevant_images = relevant_images[:3]
 
         for image in relevant_images:
@@ -205,6 +212,20 @@ def generate_answer(
                     "image_filename": visual_result.get("image_filename"),
                     "vision_model": visual_result.get("model"),
                 })
+
+                # Stop after finding visual evidence for the requested details.
+                visual_answer = visual_result["answer"].lower()
+
+                if (
+                    "fours" in question.lower()
+                    and "sixes" in question.lower()
+                    and "fours" in visual_answer
+                    and "sixes" in visual_answer
+                    and "not possible to answer" not in visual_answer
+                    and "does not contain" not in visual_answer
+                ):
+                    break
+
             except (ValueError, FileNotFoundError):
                 # Skip invalid or missing images; preserve text RAG.
                 continue

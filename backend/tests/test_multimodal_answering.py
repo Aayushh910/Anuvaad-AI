@@ -285,3 +285,98 @@ def test_text_answerable_question_skips_image_analysis(monkeypatch):
     assert "Australia won by 45 runs" in result["answer"]
     assert len(result["sources"]) == 1
     assert result["sources"][0]["content_type"] == "text"
+
+
+
+def test_scorecard_question_uses_vision_when_text_lacks_boundaries(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        answering,
+        "search_documents",
+        lambda **kwargs: [
+            {
+                "text": (
+                    "A. Verma scored 62 runs off 38 balls. "
+                    "The full scorecard is provided as an image."
+                ),
+                "document_id": "doc123",
+                "chunk_id": "chunk1",
+                "chunk_index": 0,
+                "score": 0.9,
+                "metadata": {"page_number": 9, "content_type": "text"},
+            }
+        ],
+    )
+
+    monkeypatch.setattr(
+        answering,
+        "get_document_images",
+        lambda document_id: [
+            {
+                "document_id": document_id,
+                "image_path": "/fake/line_chart.png",
+                "filename": "page_9_image_1.png",
+                "page_number": 9,
+                "image_index": 1,
+                "content_type": "image",
+            },
+            {
+                "document_id": document_id,
+                "image_path": "/fake/scorecard.png",
+                "filename": "page_9_image_2.png",
+                "page_number": 9,
+                "image_index": 2,
+                "content_type": "image",
+            },
+        ],
+    )
+
+    analyzed = []
+
+    def fake_analyze_image(image_path, question, page_number=None):
+        analyzed.append(image_path)
+        return {
+            "answer": (
+                "A. Verma scored 62 runs, hit 6 fours and 3 sixes."
+            ),
+            "model": "test-vision-model",
+            "page": page_number,
+            "image_filename": image_path.split("/")[-1],
+        }
+
+    monkeypatch.setattr(answering, "analyze_image", fake_analyze_image)
+
+    class FakeChatGroq:
+        def __init__(self, **kwargs):
+            pass
+
+        def invoke(self, messages):
+            prompt = str(messages)
+            if "Visual analysis:" in prompt:
+                return SimpleNamespace(
+                    content=(
+                        "A. Verma scored 62 runs, 6 fours and 3 sixes [S2]."
+                    )
+                )
+            return SimpleNamespace(
+                content=(
+                    "A. Verma scored 62 runs, but the number of fours "
+                    "and sixes is not available [S1]."
+                )
+            )
+
+    monkeypatch.setattr(answering, "ChatGroq", FakeChatGroq)
+
+    result = answering.generate_answer(
+        question=(
+            "According to the scorecard, how many runs did A. Verma score, "
+            "and how many fours and sixes did he hit?"
+        ),
+        document_id="doc123",
+    )
+
+    assert analyzed == ["/fake/scorecard.png"]
+    assert any("scorecard" in path for path in analyzed)
+    assert "6 fours" in result["answer"]
+    assert "3 sixes" in result["answer"]

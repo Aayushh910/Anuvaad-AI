@@ -2,7 +2,7 @@
 import json
 
 import pytest
-
+from app.services.image_retrieval import rank_document_images
 from app.services.image_retrieval import get_document_images
 
 
@@ -90,3 +90,53 @@ def test_get_document_images_skips_missing_image_files(
     )
 
     assert get_document_images("test-document") == []
+
+
+def test_rank_document_images_prioritizes_scorecard():
+    images = [
+        {"page_number": 9, "image_index": 1, "filename": "page_9_image_1.png"},
+        {"page_number": 9, "image_index": 2, "filename": "page_9_image_2.png"},
+        {"page_number": 10, "image_index": 1, "filename": "page_10_image_1.png"},
+    ]
+
+    ranked = rank_document_images(
+        images,
+        question="How many runs, fours and sixes did A. Verma score?",
+        context="Figure 6: Full scorecard. Figure 7: Wagon wheel showing runs by region.",
+    )
+
+    assert ranked[0]["filename"] == "page_9_image_2.png"
+
+
+def test_rank_document_images_prioritizes_wagon_wheel():
+    images = [
+        {"page_number": 9, "image_index": 2, "filename": "page_9_image_2.png"},
+        {"page_number": 10, "image_index": 1, "filename": "page_10_image_1.png"},
+    ]
+
+    ranked = rank_document_images(
+        images,
+        question="Which regions of the ground contributed A. Verma's runs?",
+        context="Figure 7: Wagon wheel showing runs scored in each region.",
+    )
+
+    assert ranked[0]["filename"] == "page_10_image_1.png"
+
+
+def test_rank_document_images_preserves_all_images():
+    images = [
+        {"page_number": 3, "image_index": 1, "filename": "page_3_image_1.png"},
+        {"page_number": 5, "image_index": 1, "filename": "page_5_image_1.png"},
+    ]
+
+    ranked = rank_document_images(
+        images,
+        question="Explain this picture",
+        context="",
+    )
+
+    assert len(ranked) == len(images)
+    assert {image["filename"] for image in ranked} == {
+        "page_3_image_1.png",
+        "page_5_image_1.png",
+    }
