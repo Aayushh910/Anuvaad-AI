@@ -10,3 +10,4 @@ sentence-transformers
 qdrant-client
 langchain-groq
 pytest
+PyMuPDF

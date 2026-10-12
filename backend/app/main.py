@@ -7,6 +7,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from app.services.answering import generate_answer
+from app.services.image_extraction import extract_pdf_images
 
 from app.core.config import settings
 
@@ -40,6 +41,9 @@ PROCESSED_DIR = (
     / "processed"
 )
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+
+IMAGE_ROOT = PROCESSED_DIR / "images"
+IMAGE_ROOT.mkdir(parents=True, exist_ok=True)
 
 
 @app.get("/")
@@ -109,6 +113,27 @@ def upload_pdf(file: UploadFile = File(...)):
         markdown = result.document.export_to_markdown()
         page_count = len(result.document.pages)
 
+        # Extract embedded images and preserve document/page metadata.
+        image_output_dir = IMAGE_ROOT / saved_path.stem
+
+        extracted_images = extract_pdf_images(
+            pdf_path=str(saved_path),
+            output_dir=str(image_output_dir),
+        )
+
+        images_metadata_path = (
+            PROCESSED_DIR / f"{saved_path.stem}.images.json"
+        )
+
+        images_metadata_path.write_text(
+            json.dumps(
+                extracted_images,
+                indent=2,
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
         # Extract text with actual page numbers from Docling.
         page_texts = {}
 
@@ -147,8 +172,6 @@ def upload_pdf(file: UploadFile = File(...)):
             encoding="utf-8",
         )
 
-        
-
         # Save document metadata
         metadata = {
             "document_id": saved_path.stem,
@@ -156,8 +179,11 @@ def upload_pdf(file: UploadFile = File(...)):
             "size_bytes": total_size,
             "page_count": page_count,
             "character_count": len(markdown),
+            "image_count": len(extracted_images),
+            "images_metadata_file": images_metadata_path.name,
             "markdown_file": markdown_path.name,
             "processed_at": datetime.now(timezone.utc).isoformat(),
+            
         }
 
         metadata_path = PROCESSED_DIR / f"{saved_path.stem}.json"
@@ -173,6 +199,8 @@ def upload_pdf(file: UploadFile = File(...)):
             "size_bytes": total_size,
             "page_count": page_count,
             "character_count": len(markdown),
+            "image_count": len(extracted_images),
+            "images_metadata_file": images_metadata_path.name,
             "markdown_file": markdown_path.name,
             "metadata_file": metadata_path.name,
             "content_preview": markdown[:10000],
