@@ -37,7 +37,11 @@ def test_upload_saves_table_metadata(tmp_path, monkeypatch):
 
     monkeypatch.setattr(main, "DocumentConverter", FakeConverter)
 
-    def fake_extract_pdf_images(pdf_path, output_dir):
+    def fake_extract_pdf_images(
+        pdf_path,
+        output_dir,
+        generate_descriptions=False,
+    ):
         return []
 
     def fake_extract_tables(pdf_path):

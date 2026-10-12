@@ -1,10 +1,23 @@
+
 import json
+import re
 from pathlib import Path
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 PROCESSED_DIR = BASE_DIR / "storage" / "processed"
 IMAGE_ROOT = PROCESSED_DIR / "images"
+
+# Common words that rarely help distinguish relevant images.
+STOP_WORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "by", "for",
+    "from", "how", "in", "into", "is", "it", "of", "on", "or",
+    "that", "the", "their", "this", "to", "was", "were", "what",
+    "when", "where", "which", "who", "why", "with", "would",
+    "does", "do", "did", "can", "could", "show", "shows",
+    "shown", "explain", "describe", "according", "document",
+    "image", "figure", "picture",
+}
 
 
 def get_document_images(document_id: str) -> list[dict]:
@@ -40,7 +53,7 @@ def get_document_images(document_id: str) -> list[dict]:
 
         image_path = (document_image_dir / filename).resolve()
 
-        # Keep image access restricted to this document's image directory.
+        # Only allow files directly inside this document's image directory.
         if image_path.parent != document_image_dir:
             continue
 
@@ -63,113 +76,89 @@ def get_document_images(document_id: str) -> list[dict]:
     )
 
 
+def _normalize_token(token: str) -> str:
+    """Apply lightweight normalization without domain-specific vocabulary."""
+    token = token.lower()
+
+    # Normalize common English plurals for matching, e.g. measurements
+    # to measurement and runs to run.
+    if len(token) > 4 and token.endswith("ies"):
+        return token[:-3] + "y"
+
+    if (
+        len(token) > 4
+        and token.endswith("s")
+        and not token.endswith(("ss", "us", "is"))
+    ):
+        return token[:-1]
+
+    return token
+
+
+def _tokenize(text: str) -> set[str]:
+    """Extract useful normalized terms from arbitrary text."""
+    tokens = re.findall(r"[a-z0-9]+", text.lower())
+
+    return {
+        _normalize_token(token)
+        for token in tokens
+        if len(token) > 1 and token not in STOP_WORDS
+    }
+
+
 def rank_document_images(
     images: list[dict],
     question: str,
     context: str = "",
 ) -> list[dict]:
-    """Rank images using question intent and persisted image descriptions."""
+    """
+    Rank images using question relevance, image metadata, and context.
+
+    This function does not assume a particular document topic or visual type.
+    It preserves all images and uses page order to break ranking ties.
+    """
     if not images:
         return []
 
-    question_lower = question.lower()
-    context_lower = context.lower()
-
-    # Normalize wagon-wheel questions before matching visual types.
-    if any(
-        phrase in question_lower
-        for phrase in (
-            "regions of the ground",
-            "which regions",
-            "scoring regions",
-            "contributed the runs",
-            "where were the runs scored",
-        )
-    ):
-        question_lower += " wagon wheel scoring regions"
-
-    visual_types = {
-        "scorecard": (
-            "scorecard", "batter", "batsman", "runs",
-            "fours", "sixes", "wickets",
-        ),
-        "wagon_wheel": (
-            "wagon wheel", "scoring regions",
-            "regions of the ground", "which regions",
-            "region of the ground", "contributed",
-            "shot direction", "scoring area",
-        ),
-        "chart": (
-            "chart", "graph", "trend", "progression",
-            "over time", "percentage", "distribution",
-        ),
-        "diagram": (
-            "diagram", "illustration", "schematic",
-            "components", "connections",
-        ),
-        "fielding": (
-            "fielding positions", "field placements", "fielders",
-        ),
-        "table": (
-            "table", "tabular", "rows", "columns",
-        ),
-    }
-
-    matched_types = {
-        visual_type
-        for visual_type, terms in visual_types.items()
-        if any(term in question_lower for term in terms)
-    }
-
-    # When the question asks about ground regions, prioritize wagon wheels.
-    if "wagon wheel scoring regions" in question_lower:
-        matched_types.discard("scorecard")
-        matched_types.add("wagon_wheel")
-
-    question_terms = {
-        term.strip(".,?!:;()[]{}\"'")
-        for term in question_lower.split()
-        if len(term.strip(".,?!:;()[]{}\"'")) > 2
-    }
+    question_terms = _tokenize(question)
+    context_terms = _tokenize(context)
 
     def score(image: dict) -> int:
-        filename = str(image.get("filename", "")).lower()
-        caption = str(image.get("caption", "")).lower()
-        description = str(image.get("description", "")).lower()
-        metadata_text = f"{filename} {caption} {description}"
+        filename = str(image.get("filename", "")).replace("_", " ")
+        caption = str(image.get("caption", ""))
+        description = str(image.get("description", ""))
 
-        value = 0
+        filename_terms = _tokenize(filename)
+        caption_terms = _tokenize(caption)
+        description_terms = _tokenize(description)
 
-        # Strong filename match.
-        if "wagon_wheel" in matched_types and "wagon_wheel" in filename:
-            value += 50
-
-        if "scorecard" in matched_types and "scorecard" in filename:
-            value += 50
-
-        # Match visual type against image metadata.
-        for visual_type in matched_types:
-            terms = visual_types[visual_type]
-            if any(term in metadata_text for term in terms):
-                value += 20
-
-        # Use document context as supporting evidence.
-        for visual_type in matched_types:
-            terms = visual_types[visual_type]
-            if (
-                any(term in context_lower for term in terms)
-                and any(term in metadata_text for term in terms)
-            ):
-                value += 15
-
-        metadata_terms = set(
-            metadata_text.replace("-", " ").replace("_", " ").split()
+        metadata_terms = (
+            filename_terms | caption_terms | description_terms
         )
-        value += len(question_terms & metadata_terms)
+
+        # Weight explicit captions and descriptions more strongly than
+        # filenames, which may contain generic or automatically generated text.
+        value = 0
+        value += 2 * len(question_terms & filename_terms)
+        value += 3 * len(question_terms & caption_terms)
+        value += 3 * len(question_terms & description_terms)
+
+        # Document context is supporting evidence, not a substitute for
+        # matching the user's question.
+        question_metadata_matches = question_terms & metadata_terms
+        context_matches = context_terms & metadata_terms
+
+        value += 2 * len(question_metadata_matches & context_matches)
+
+        value += len(context_matches)
+
+        # Reward images that cover several distinct terms from the question.
+        # This helps distinguish a directly relevant image from one that
+        # happens to mention a single common term.
+        value += 2 * len(question_terms & metadata_terms)
 
         return value
 
-    # Highest score first; use page order to break ties.
     return sorted(
         images,
         key=lambda image: (

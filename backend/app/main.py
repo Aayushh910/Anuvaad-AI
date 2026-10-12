@@ -124,6 +124,10 @@ def upload_pdf(file: UploadFile = File(...)):
         extracted_images = extract_pdf_images(
             pdf_path=str(saved_path),
             output_dir=str(image_output_dir),
+            generate_descriptions=(
+                os.getenv("DOCDUMIND_GENERATE_IMAGE_DESCRIPTIONS", "false").lower()
+                == "true"
+            ),
         )
 
         images_metadata_path = (

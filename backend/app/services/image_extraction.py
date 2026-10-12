@@ -1,8 +1,6 @@
 import logging
 from pathlib import Path
-
-import fitz  # PyMuPDF
-
+import fitz
 from app.services.vision import describe_image
 
 logger = logging.getLogger(__name__)

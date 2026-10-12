@@ -37,7 +37,11 @@ def test_upload_saves_image_metadata(tmp_path, monkeypatch):
 
     monkeypatch.setattr(main, "DocumentConverter", FakeConverter)
 
-    def fake_extract_pdf_images(pdf_path, output_dir):
+    def fake_extract_pdf_images(
+        pdf_path,
+        output_dir,
+        generate_descriptions=False,    
+    ):
         output = image_root / "test_image.png"
         output.write_bytes(b"fake image")
 

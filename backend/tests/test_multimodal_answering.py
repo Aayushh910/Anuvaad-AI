@@ -378,7 +378,7 @@ def test_scorecard_question_uses_vision_when_text_lacks_boundaries(
         document_id="doc123",
     )
 
-    assert analyzed == ["/fake/scorecard.png"]
+    assert analyzed[0] == "/fake/scorecard.png"
     assert any("scorecard" in path for path in analyzed)
     assert "6 fours" in result["answer"]
     assert "3 sixes" in result["answer"]

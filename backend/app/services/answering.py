@@ -15,34 +15,46 @@ MODEL_NAME = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
 
 INSUFFICIENT_EVIDENCE_PHRASES = (
+    # General lack of evidence or information
     "i don't have enough information",
     "i do not have enough information",
-    "the context does not contain enough evidence",
-    "context does not contain enough evidence",
-    "the context does not provide enough evidence",
-    "context does not provide enough evidence",
-    "cannot be determined from the provided context",
-    "cannot be determined from the context",
-    "cannot be determined from the given context",
-    "cannot be determined from",
-    "cannot be answered from the provided context",
-    "cannot be answered from the context",
-    "not enough evidence",
-    "insufficient evidence",
     "not enough information",
     "insufficient information",
-    "does not contain enough information",
-    "does not provide enough information",
-    "does not contain sufficient evidence",
+    "not enough evidence",
+    "insufficient evidence",
+    "context does not contain enough evidence",
+    "context does not provide enough evidence",
+    "does not contain enough evidence",
     "does not provide sufficient evidence",
+    "does not contain sufficient evidence",
+
+    # Answers that cannot be determined or provided
+    "cannot be determined from",
+    "cannot be answered from",
+    "cannot determine this from the supplied information",
+
+    # Requested information is missing
+    "does not provide the requested information",
+    "does not contain the information needed",
+    "does not contain the information required",
+    "does not contain any information about",
+    "does not provide enough information",
+    "does not contain enough information",
+    "does not state the exact number",
+    "does not state the exact total",
     "does not give the breakdown",
     "does not provide the breakdown",
-    "is not available",
+
+    # Explicit document or source limitations
+    "the document does not state",
+    "the provided document does not state",
+    "the provided text does not state",
     "not available from the provided context",
     "not available from the supplied sources",
+    "is not available",
     "cannot be provided from the supplied sources",
-    "cannot be answered from the supplied sources"
 )
+
 
 
 def _has_insufficient_evidence(
@@ -191,6 +203,7 @@ def generate_answer(
             context=text_context,
         )
 
+        
         # Keep vision API usage bounded.
         relevant_images = relevant_images[:3]
 
@@ -201,6 +214,13 @@ def generate_answer(
                     question=question,
                     page_number=image.get("page_number"),
                 )
+
+                visual_answer = visual_result.get("answer", "").strip()
+
+                # Skip empty visual responses.
+                if not visual_answer:
+                    continue
+
                 image_evidence.append({
                     "document_id": document_id,
                     "chunk_id": None,
@@ -208,23 +228,10 @@ def generate_answer(
                     "score": None,
                     "page": visual_result.get("page"),
                     "content_type": "image",
-                    "text": visual_result["answer"],
+                    "text": visual_answer,
                     "image_filename": visual_result.get("image_filename"),
                     "vision_model": visual_result.get("model"),
                 })
-
-                # Stop after finding visual evidence for the requested details.
-                visual_answer = visual_result["answer"].lower()
-
-                if (
-                    "fours" in question.lower()
-                    and "sixes" in question.lower()
-                    and "fours" in visual_answer
-                    and "sixes" in visual_answer
-                    and "not possible to answer" not in visual_answer
-                    and "does not contain" not in visual_answer
-                ):
-                    break
 
             except (ValueError, FileNotFoundError):
                 # Skip invalid or missing images; preserve text RAG.
