@@ -7,6 +7,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from app.services.answering import generate_answer
+from app.services.table_extraction import extract_tables
 from app.services.image_extraction import extract_pdf_images
 
 from app.core.config import settings
@@ -161,6 +162,22 @@ def upload_pdf(file: UploadFile = File(...)):
             for page_number, texts in sorted(page_texts.items())
         ]
 
+        # Extract structured tables from the uploaded PDF.
+        extracted_tables = extract_tables(str(saved_path))
+
+        tables_metadata_path = (
+            PROCESSED_DIR / f"{saved_path.stem}.tables.json"
+        )
+
+        tables_metadata_path.write_text(
+            json.dumps(
+                extracted_tables,
+                indent=2,
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
         # Save the complete extracted Markdown
         markdown_path = PROCESSED_DIR / f"{saved_path.stem}.md"
         markdown_path.write_text(markdown, encoding="utf-8")
@@ -181,6 +198,8 @@ def upload_pdf(file: UploadFile = File(...)):
             "character_count": len(markdown),
             "image_count": len(extracted_images),
             "images_metadata_file": images_metadata_path.name,
+            "table_count": len(extracted_tables),
+            "tables_metadata_file": tables_metadata_path.name,
             "markdown_file": markdown_path.name,
             "processed_at": datetime.now(timezone.utc).isoformat(),
             
@@ -201,6 +220,8 @@ def upload_pdf(file: UploadFile = File(...)):
             "character_count": len(markdown),
             "image_count": len(extracted_images),
             "images_metadata_file": images_metadata_path.name,
+            "table_count": len(extracted_tables),
+            "tables_metadata_file": tables_metadata_path.name,
             "markdown_file": markdown_path.name,
             "metadata_file": metadata_path.name,
             "content_preview": markdown[:10000],

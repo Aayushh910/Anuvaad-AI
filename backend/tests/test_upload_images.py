@@ -58,6 +58,8 @@ def test_upload_saves_image_metadata(tmp_path, monkeypatch):
         main, "extract_pdf_images", fake_extract_pdf_images
     )
 
+    monkeypatch.setattr(main, "extract_tables", lambda pdf_path: [])
+
     client = TestClient(main.app)
 
     response = client.post(
@@ -71,7 +73,7 @@ def test_upload_saves_image_metadata(tmp_path, monkeypatch):
         },
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
 
     data = response.json()
     assert data["image_count"] == 1
