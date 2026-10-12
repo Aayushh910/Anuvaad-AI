@@ -106,3 +106,26 @@ def analyze_image(
         "page": page_number,
         "image_filename": path.name,
     }
+
+
+def describe_image(
+    image_path: str,
+    page_number: int | None = None,
+) -> str:
+    """Generate a concise, searchable description of a PDF image."""
+
+    result = analyze_image(
+        image_path=image_path,
+        page_number=page_number,
+        question=(
+            "Describe this image for a PDF search system. "
+            "Identify its type, title, labels, key values, entities, "
+            "and relationships where visible. For charts, include "
+            "the axes, legend, and important trends. For tables, "
+            "summarize the headers and important values. "
+            "For diagrams, explain the main components and connections. "
+            "Be concise and do not guess unreadable information."
+        ),
+    )
+
+    return result["answer"]
