@@ -310,27 +310,29 @@ def test_scorecard_question_uses_vision_when_text_lacks_boundaries(
     )
 
     monkeypatch.setattr(
-        answering,
-        "get_document_images",
-        lambda document_id: [
-            {
-                "document_id": document_id,
-                "image_path": "/fake/line_chart.png",
-                "filename": "page_9_image_1.png",
-                "page_number": 9,
-                "image_index": 1,
-                "content_type": "image",
-            },
-            {
-                "document_id": document_id,
-                "image_path": "/fake/scorecard.png",
-                "filename": "page_9_image_2.png",
-                "page_number": 9,
-                "image_index": 2,
-                "content_type": "image",
-            },
-        ],
-    )
+    answering,
+    "get_document_images",
+    lambda document_id: [
+        {
+            "document_id": document_id,
+            "image_path": "/fake/line_chart.png",
+            "filename": "page_9_image_1.png",
+            "page_number": 9,
+            "image_index": 1,
+            "content_type": "image",
+            "caption": "Line chart showing run progression",
+        },
+        {
+            "document_id": document_id,
+            "image_path": "/fake/scorecard.png",
+            "filename": "page_9_image_2.png",
+            "page_number": 9,
+            "image_index": 2,
+            "content_type": "image",
+            "caption": "Scorecard showing runs, fours and sixes",
+        },
+    ],
+)
 
     analyzed = []
 

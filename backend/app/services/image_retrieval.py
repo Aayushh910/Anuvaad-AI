@@ -69,57 +69,88 @@ def rank_document_images(
     question: str,
     context: str = "",
 ) -> list[dict]:
-    """Rank extracted images using question keywords and nearby text context."""
+    """Rank images using question intent, text context, and image metadata."""
     if not images:
         return []
 
     question_lower = question.lower()
     context_lower = context.lower()
 
-    # Identify the kind of visual requested.
-    visual_terms = {
-        "scorecard": ["scorecard", "runs", "fours", "sixes", "batter", "wickets"],
-        "wagon_wheel": ["wagon wheel", "scoring regions", "regions of the ground"],
-        "line_chart": ["run progression", "cumulative runs", "overs completed"],
-        "fielding": ["fielding positions", "field placements", "fielders"],
-        "diagram": ["diagram", "illustration", "shown in the picture"],
+    visual_types = {
+        "scorecard": (
+            "scorecard",
+            "batter",
+            "batsman",
+            "fours",
+            "sixes",
+            "wickets",
+        ),
+        "wagon_wheel": (
+            "wagon wheel",
+            "scoring regions",
+            "regions of the ground",
+            "which regions",
+        ),
+        "chart": (
+            "chart",
+            "graph",
+            "trend",
+            "progression",
+            "over time",
+        ),
+        "diagram": (
+            "diagram",
+            "illustration",
+            "schematic",
+        ),
+        "fielding": (
+            "fielding positions",
+            "field placements",
+            "fielders",
+        ),
     }
 
-    matched_types = [
+    matched_types = {
         visual_type
-        for visual_type, terms in visual_terms.items()
+        for visual_type, terms in visual_types.items()
         if any(term in question_lower for term in terms)
-    ]
+    }
 
+    
     def score(image: dict) -> int:
-        page = image.get("page_number")
-        index = image.get("image_index", 0)
         filename = str(image.get("filename", "")).lower()
+        caption = str(image.get("caption", "")).lower()
+        description = str(image.get("description", "")).lower()
+        metadata_text = f"{filename} {caption} {description}"
         value = 0
 
-        # Use known figure descriptions in the retrieved text context.
-        if "scorecard" in context_lower and page == 9 and index == 2:
-            value += 8
-        if "wagon wheel" in context_lower and page == 10:
-            value += 8
-        if (
-            ("run progression" in context_lower or "cumulative runs" in context_lower)
-            and page == 9 and index == 1
+        # Strongly prefer images whose metadata identifies their visual type.
+        for visual_type in matched_types:
+            terms = visual_types[visual_type]
+            if any(term in metadata_text for term in terms):
+                value += 10
+
+        # Match visual type to descriptions found in the retrieved text.
+        if "scorecard" in matched_types and "scorecard" in context_lower:
+            if "scorecard" in metadata_text:
+                value += 15
+
+        if "wagon_wheel" in matched_types and "wagon wheel" in context_lower:
+            if "wagon wheel" in metadata_text:
+                value += 15
+
+        # Prefer images with a descriptive filename over anonymous filenames
+        # only when the filename actually contains a relevant visual term.
+        if "scorecard" in matched_types and "scorecard" in filename:
+            value += 5
+
+        if "wagon_wheel" in matched_types and (
+            "wagon wheel" in filename or "wagon_wheel" in filename
         ):
-            value += 8
+            value += 5
 
-        # Use question intent to prioritize likely visual types.
-        if "scorecard" in matched_types and page == 9 and index == 2:
-            value += 10
-        if "wagon_wheel" in matched_types and page == 10:
-            value += 10
-        if "line_chart" in matched_types and page == 9 and index == 1:
-            value += 10
-        if "fielding" in matched_types and page == 5:
-            value += 10
-
-        # Stable fallback: retain deterministic ordering for ties.
         return value
+
 
     return sorted(
         images,

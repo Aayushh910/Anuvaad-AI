@@ -1,9 +1,11 @@
-
 import json
 
 import pytest
-from app.services.image_retrieval import rank_document_images
-from app.services.image_retrieval import get_document_images
+
+from app.services.image_retrieval import (
+    get_document_images,
+    rank_document_images,
+)
 
 
 def test_get_document_images_returns_page_metadata(tmp_path, monkeypatch):
@@ -17,13 +19,15 @@ def test_get_document_images_returns_page_metadata(tmp_path, monkeypatch):
     image_file = document_image_dir / "page_1_image_1.png"
     image_file.write_bytes(b"test-image")
 
-    metadata = [{
-        "page_number": 1,
-        "image_index": 1,
-        "filename": image_file.name,
-        "width": 100,
-        "height": 100,
-    }]
+    metadata = [
+        {
+            "page_number": 1,
+            "image_index": 1,
+            "filename": image_file.name,
+            "width": 100,
+            "height": 100,
+        }
+    ]
 
     (processed_dir / f"{document_id}.images.json").write_text(
         json.dumps(metadata),
@@ -72,11 +76,15 @@ def test_get_document_images_skips_missing_image_files(
     (image_root / "test-document").mkdir(parents=True)
 
     (processed_dir / "test-document.images.json").write_text(
-        json.dumps([{
-            "page_number": 2,
-            "image_index": 1,
-            "filename": "missing.png",
-        }]),
+        json.dumps(
+            [
+                {
+                    "page_number": 2,
+                    "image_index": 1,
+                    "filename": "missing.png",
+                }
+            ]
+        ),
         encoding="utf-8",
     )
 
@@ -94,15 +102,33 @@ def test_get_document_images_skips_missing_image_files(
 
 def test_rank_document_images_prioritizes_scorecard():
     images = [
-        {"page_number": 9, "image_index": 1, "filename": "page_9_image_1.png"},
-        {"page_number": 9, "image_index": 2, "filename": "page_9_image_2.png"},
-        {"page_number": 10, "image_index": 1, "filename": "page_10_image_1.png"},
+        {
+            "page_number": 9,
+            "image_index": 1,
+            "filename": "page_9_image_1.png",
+            "caption": "Line chart showing run progression",
+        },
+        {
+            "page_number": 9,
+            "image_index": 2,
+            "filename": "page_9_image_2.png",
+            "caption": "Full scorecard showing runs, fours and sixes",
+        },
+        {
+            "page_number": 10,
+            "image_index": 1,
+            "filename": "page_10_image_1.png",
+            "caption": "Wagon wheel showing runs by region",
+        },
     ]
 
     ranked = rank_document_images(
         images,
         question="How many runs, fours and sixes did A. Verma score?",
-        context="Figure 6: Full scorecard. Figure 7: Wagon wheel showing runs by region.",
+        context=(
+            "Figure 6: Full scorecard. "
+            "Figure 7: Wagon wheel showing runs by region."
+        ),
     )
 
     assert ranked[0]["filename"] == "page_9_image_2.png"
@@ -110,8 +136,18 @@ def test_rank_document_images_prioritizes_scorecard():
 
 def test_rank_document_images_prioritizes_wagon_wheel():
     images = [
-        {"page_number": 9, "image_index": 2, "filename": "page_9_image_2.png"},
-        {"page_number": 10, "image_index": 1, "filename": "page_10_image_1.png"},
+        {
+            "page_number": 9,
+            "image_index": 2,
+            "filename": "page_9_image_2.png",
+            "caption": "Full scorecard showing runs, fours and sixes",
+        },
+        {
+            "page_number": 10,
+            "image_index": 1,
+            "filename": "page_10_image_1.png",
+            "caption": "Wagon wheel showing scoring regions",
+        },
     ]
 
     ranked = rank_document_images(
@@ -125,8 +161,16 @@ def test_rank_document_images_prioritizes_wagon_wheel():
 
 def test_rank_document_images_preserves_all_images():
     images = [
-        {"page_number": 3, "image_index": 1, "filename": "page_3_image_1.png"},
-        {"page_number": 5, "image_index": 1, "filename": "page_5_image_1.png"},
+        {
+            "page_number": 3,
+            "image_index": 1,
+            "filename": "page_3_image_1.png",
+        },
+        {
+            "page_number": 5,
+            "image_index": 1,
+            "filename": "page_5_image_1.png",
+        },
     ]
 
     ranked = rank_document_images(
