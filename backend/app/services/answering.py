@@ -4,7 +4,8 @@ import os
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
-
+from app.services.image_retrieval import get_document_images
+from app.services.vision import analyze_image
 from app.services.vector_store import search_documents
 
 load_dotenv()
@@ -29,7 +30,52 @@ def generate_answer(
         document_id=document_id,
     )
 
-    if not results:
+        # Retrieve images only when a specific document is selected.
+    image_evidence = []
+
+    if document_id:
+        retrieved_pages = {
+            (result.get("metadata") or {}).get("page_number")
+            or (result.get("metadata") or {}).get("page")
+            for result in results
+        }
+        retrieved_pages.discard(None)
+
+        try:
+            document_images = get_document_images(document_id)
+        except FileNotFoundError:
+            document_images = []
+
+        # Analyze at most 3 images on pages relevant to the question.
+        relevant_images = [
+            image
+            for image in document_images
+            if image.get("page_number") in retrieved_pages
+        ][:3]
+
+        for image in relevant_images:
+            try:
+                visual_result = analyze_image(
+                    image_path=image["image_path"],
+                    question=question,
+                    page_number=image.get("page_number"),
+                )
+                image_evidence.append({
+                    "document_id": document_id,
+                    "chunk_id": None,
+                    "chunk_index": None,
+                    "score": None,
+                    "page": visual_result.get("page"),
+                    "content_type": "image",
+                    "text": visual_result["answer"],
+                    "image_filename": visual_result.get("image_filename"),
+                    "vision_model": visual_result.get("model"),
+                })
+            except (ValueError, FileNotFoundError):
+                # Skip invalid or missing images; preserve text RAG.
+                continue
+
+    if not results and not image_evidence:
         return {
             "answer": "I couldn't find relevant information in the indexed documents.",
             "sources": [],
@@ -64,6 +110,21 @@ def generate_answer(
             "page": page,
             "content_type": content_type,
             "text": text,
+        })
+
+    for image in image_evidence:
+        source_label = f"S{len(sources) + 1}"
+
+        context_parts.append(
+            f"[{source_label}]\n"
+            f"Content type: image\n"
+            f"Page: {image['page'] if image['page'] is not None else 'Unknown'}\n"
+            f"Visual analysis:\n{image['text']}"
+        )
+
+        sources.append({
+            "source": source_label,
+            **image,
         })
 
     context = "\n\n".join(context_parts)
