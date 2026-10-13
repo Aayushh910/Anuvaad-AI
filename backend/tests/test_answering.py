@@ -1,7 +1,10 @@
 
-from unittest.mock import patch
-
-from app.services.answering import generate_answer
+from unittest.mock import patch,Mock
+from app.services.answering import (
+    generate_answer,
+    _has_insufficient_evidence,
+    _is_answer_supported,
+)
 
 
 def test_generate_answer_uses_retrieved_sources():
@@ -108,3 +111,70 @@ def test_invalid_citation_triggers_image_fallback():
 
     mock_images.assert_called_once_with("doc-123")
     assert result["answer"] != "The answer is 42. [S2]"
+
+
+def test_detects_claim_not_supported_by_cited_source():
+    answer = "Reader preference always causes writer starvation. [S1]"
+
+    sources = [
+        {
+            "source": "S1",
+            "text": (
+                "Continuous arrival of readers can cause "
+                "writer starvation."
+            ),
+        }
+    ]
+
+    llm = Mock()
+    llm.invoke.return_value.content = "UNSUPPORTED"
+
+    assert not _is_answer_supported(answer, sources, llm)
+
+def test_accepts_answer_when_evidence_verifier_approves():
+    llm = Mock()
+    llm.invoke.return_value.content = "SUPPORTED"
+
+    sources = [{
+        "source": "S1",
+        "text": (
+            "Continuous arrival of readers can cause "
+            "writer starvation."
+        ),
+    }]
+
+    assert _is_answer_supported(
+        "Continuous reader arrivals can cause writer starvation. [S1]",
+        sources,
+        llm,
+    )
+
+
+def test_rejects_answer_when_evidence_verifier_rejects():
+    llm = Mock()
+    llm.invoke.return_value.content = "UNSUPPORTED"
+
+    sources = [{
+        "source": "S1",
+        "text": (
+            "Continuous arrival of readers can cause "
+            "writer starvation."
+        ),
+    }]
+
+    assert not _is_answer_supported(
+        "The system supports exactly 500 readers. [S1]",
+        sources,
+        llm,
+    )
+
+
+def test_rejects_answer_when_verification_fails():
+    llm = Mock()
+    llm.invoke.side_effect = RuntimeError("Verifier unavailable")
+
+    assert not _is_answer_supported(
+        "Writer starvation can occur. [S1]",
+        [{"source": "S1", "text": "Writer starvation can occur."}],
+        llm,
+    )
