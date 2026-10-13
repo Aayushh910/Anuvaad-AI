@@ -1,0 +1,42 @@
+[
+    {
+        "question": "What is the weight range of a cricket ball?",
+        "table_id": 1,
+        "page_number": 3
+    },
+    {
+        "question": "When was the first international T20I match played?",
+        "table_id": 2,
+        "page_number": 4
+    },
+    {
+        "question": "How many Test runs did Sachin Tendulkar score?",
+        "table_id": 3,
+        "page_number": 6
+    },
+    {
+        "question": "How many Test wickets did Muttiah Muralitharan take?",
+        "table_id": 4,
+        "page_number": 6
+    },
+    {
+        "question": "Who won the 1975 Cricket World Cup?",
+        "table_id": 5,
+        "page_number": 7
+    },
+    {
+        "question": "How many IPL titles have Chennai Super Kings won?",
+        "table_id": 6,
+        "page_number": 8
+    },
+    {
+        "question": "What was the run rate during the early innings phase?",
+        "table_id": 8,
+        "page_number": 10
+    },
+    {
+        "question": "What is a maiden over?",
+        "table_id": 9,
+        "page_number": 11
+    }
+]

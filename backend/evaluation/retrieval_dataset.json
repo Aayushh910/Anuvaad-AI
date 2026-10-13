@@ -78,5 +78,165 @@
             "35dda60c66aa4852bc4a97cf7feb8dba_16"
         ],
         "k": 3
+    },
+    {
+        "query": "When was the International Cricket Council founded?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_3"
+        ],
+        "k": 3
+    },
+    {
+        "query": "Where is the ICC headquartered?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_3"
+        ],
+        "k": 3
+    },
+    {
+        "query": "When was the Board of Control for Cricket in India formed?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_3"
+        ],
+        "k": 3
+    },
+    {
+        "query": "Why did the Ashes series get its name?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_3"
+        ],
+        "k": 3
+    },
+    {
+        "query": "When was the first Women's Cricket World Cup held, and who won it?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_4"
+        ],
+        "k": 3
+    },
+    {
+        "query": "How many players are on a cricket team?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_5"
+        ],
+        "k": 3
+    },
+    {
+        "query": "How many legal deliveries make up an over?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_5"
+        ],
+        "k": 3
+    },
+    {
+        "query": "How tall are cricket stumps?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_5"
+        ],
+        "k": 3
+    },
+    {
+        "query": "What is the popping crease, and how far is it from the stumps?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_5"
+        ],
+        "k": 3
+    },
+    {
+        "query": "When and where was the first day-night Test played?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_6"
+        ],
+        "k": 3
+    },
+    {
+        "query": "What resources does the Duckworth-Lewis-Stern method consider?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_8"
+        ],
+        "k": 3
+    },
+    {
+        "query": "Who devised the original DLS method, and when was it first used?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_8"
+        ],
+        "k": 3
+    },
+    {
+        "query": "How are the off side and leg side defined for a right-handed batter?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_9"
+        ],
+        "k": 3
+    },
+    {
+        "query": "Where does the wicketkeeper stand?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_9"
+        ],
+        "k": 3
+    },
+    {
+        "query": "Which fielding positions are on the leg side?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_10"
+        ],
+        "k": 3
+    },
+    {
+        "query": "Who holds the record for 100 international centuries?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_11"
+        ],
+        "k": 3
+    },
+    {
+        "query": "Who holds the highest individual Test score, and what was the score?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_11"
+        ],
+        "k": 3
+    },
+    {
+        "query": "How many ICC Men's Cricket World Cup titles has Australia won?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_13"
+        ],
+        "k": 3
+    },
+    {
+        "query": "Who won the inaugural IPL season, and in what year was the IPL launched?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_13"
+        ],
+        "k": 3
+    },
+    {
+        "query": "By how many runs did Mumbai Strikers defeat Delhi Titans in the illustrative match?",
+        "document_id": "35dda60c66aa4852bc4a97cf7feb8dba",
+        "relevant_chunk_ids": [
+            "35dda60c66aa4852bc4a97cf7feb8dba_15"
+        ],
+        "k": 3
     }
 ]

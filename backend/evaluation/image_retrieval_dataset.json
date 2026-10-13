@@ -1,0 +1,30 @@
+[
+    {
+        "question": "What is the length and width of a cricket pitch?",
+        "expected_filename": "page_3_image_1.png"
+    },
+    {
+        "question": "Which fielding positions are on the leg side?",
+        "expected_filename": "page_5_image_1.png"
+    },
+    {
+        "question": "Which country has won the most Men's Cricket World Cup titles?",
+        "expected_filename": "page_7_image_1.png"
+    },
+    {
+        "question": "How many cumulative runs had Mumbai Strikers scored after 15 overs?",
+        "expected_filename": "page_9_image_1.png"
+    },
+    {
+        "question": "Who was Player of the Match in the Mumbai Strikers versus Delhi Titans match?",
+        "expected_filename": "page_9_image_2.png"
+    },
+    {
+        "question": "In which fielding region did A. Verma score the most runs?",
+        "expected_filename": "page_10_image_1.png"
+    },
+    {
+        "question": "What percentage of dismissals were caught?",
+        "expected_filename": "page_11_image_1.png"
+    }
+]
