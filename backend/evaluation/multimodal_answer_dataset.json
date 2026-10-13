@@ -1,0 +1,38 @@
+[
+    {
+        "question": "What is the length of a cricket pitch?",
+        "expected_answer": "22 yards (20.12 metres)",
+        "expected_page": 3,
+        "expected_filename": "page_3_image_1.png"
+    },
+    {
+        "question": "Which country has won the most Men's Cricket World Cup titles?",
+        "expected_answer": "Australia, with 6 titles",
+        "expected_page": 7,
+        "expected_filename": "page_7_image_1.png"
+    },
+    {
+        "question": "How many runs did A. Verma score?",
+        "expected_answer": "62 runs",
+        "expected_page": 9,
+        "expected_filename": "page_9_image_2.png"
+    },
+    {
+        "question": "Who was Player of the Match in the Mumbai Strikers versus Delhi Titans match?",
+        "expected_answer": "A. Verma",
+        "expected_page": 9,
+        "expected_filename": "page_9_image_2.png"
+    },
+    {
+        "question": "What percentage of dismissals were caught?",
+        "expected_answer": "55%",
+        "expected_page": 11,
+        "expected_filename": "page_11_image_1.png"
+    },
+    {
+        "question": "In which region did A. Verma score the most runs?",
+        "expected_answer": "Midwicket, with 18 runs",
+        "expected_page": 10,
+        "expected_filename": "page_10_image_1.png"
+    }
+]
