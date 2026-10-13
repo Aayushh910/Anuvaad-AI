@@ -263,17 +263,29 @@ def test_text_answerable_question_skips_image_analysis(monkeypatch):
         unexpected_image_lookup,
     )
 
+    
     class FakeChatGroq:
         def __init__(self, **kwargs):
             pass
 
         def invoke(self, messages):
+            # The semantic verifier includes this exact marker
+            # in its human message.
+            is_verification = any(
+                "Answer to evaluate:" in str(message.content)
+                for message in messages
+            )
+
+            if is_verification:
+                return SimpleNamespace(content="SUPPORTED")
+
             return SimpleNamespace(
                 content=(
                     "Australia won by 45 runs at the Melbourne "
                     "Cricket Ground [S1]."
                 )
             )
+
 
     monkeypatch.setattr(answering, "ChatGroq", FakeChatGroq)
 
@@ -348,27 +360,35 @@ def test_scorecard_question_uses_vision_when_text_lacks_boundaries(
         }
 
     monkeypatch.setattr(answering, "analyze_image", fake_analyze_image)
-
+       
     class FakeChatGroq:
         def __init__(self, **kwargs):
-            pass
+            self.call_count = 0
 
         def invoke(self, messages):
-            prompt = str(messages)
-            if "Visual analysis:" in prompt:
+            self.call_count += 1
+
+            # First call: initial text-only answer
+            if self.call_count == 1:
                 return SimpleNamespace(
                     content=(
-                        "A. Verma scored 62 runs, 6 fours and 3 sixes [S2]."
+                        "A. Verma scored 62 runs, but the number "
+                        "of fours and sixes is unavailable [S1]."
                     )
                 )
+
+            # Second call: answer after image evidence is included
             return SimpleNamespace(
-                content=(
-                    "A. Verma scored 62 runs, but the number of fours "
-                    "and sixes is not available [S1]."
-                )
+                content="A. Verma scored 62 runs, hit 6 fours and 3 sixes [S2]."
             )
 
+
     monkeypatch.setattr(answering, "ChatGroq", FakeChatGroq)
+
+    monkeypatch.setattr(
+    answering,
+    "_is_answer_supported",
+    lambda answer, sources, llm: False,)
 
     result = answering.generate_answer(
         question=(
