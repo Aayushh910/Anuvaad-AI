@@ -75,6 +75,26 @@ def api_health_check():
     }
 
 
+@app.get("/api/v1/documents", tags=["Documents"])
+def list_documents():
+    docs = []
+    for meta_file in PROCESSED_DIR.glob("*.json"):
+        if (
+            meta_file.name.endswith(".images.json")
+            or meta_file.name.endswith(".tables.json")
+            or meta_file.name.endswith(".pages.json")
+        ):
+            continue
+        try:
+            data = json.loads(meta_file.read_text(encoding="utf-8"))
+            docs.append(data)
+        except Exception:
+            continue
+    # Sort by processed_at descending if available
+    docs.sort(key=lambda d: d.get("processed_at", ""), reverse=True)
+    return docs
+
+
 @app.post("/api/v1/documents/upload", tags=["Documents"])
 def upload_pdf(file: UploadFile = File(...)):
     if not file.filename or Path(file.filename).suffix.lower() != ".pdf":
