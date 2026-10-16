@@ -7,6 +7,7 @@ import {
   Table,
   Image as ImageIcon,
   X,
+  Plus,
 } from 'lucide-react'
 import UploadZone from './UploadZone'
 import { STEP_LABELS, STEP_ORDER, type Document, type ProcessingStep } from '../types'
@@ -18,6 +19,7 @@ interface SidebarProps {
   onUpload: (file: File) => void
   onRemove: (id: string) => void
   onClose?: () => void
+  onNewChat?: () => void
 }
 
 function formatBytes(bytes: number): string {
@@ -63,23 +65,37 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
     <div
       onClick={isReady ? onSelect : undefined}
       className={`group relative rounded-xl p-3 transition-all duration-200 animate-fade-in border ${
-        isActive
-          ? 'bg-[#121622] border-[#3b82f6]/40 shadow-sm'
+        isReady ? 'cursor-pointer' : 'cursor-default'
+      }`}
+      style={{
+        backgroundColor: isActive
+          ? 'var(--accent-subtle)'
           : isError
-          ? 'bg-red-500/5 border-red-500/20'
-          : 'bg-[#0d1017] hover:bg-[#121620] border-white/[0.04]'
-      } ${isReady ? 'cursor-pointer' : 'cursor-default'}`}
+          ? 'rgba(239, 68, 68, 0.08)'
+          : 'var(--bg-card)',
+        borderColor: isActive
+          ? 'var(--accent-primary)'
+          : isError
+          ? 'rgba(239, 68, 68, 0.25)'
+          : 'var(--border-subtle)',
+      }}
     >
       <div className="flex items-start gap-2.5">
         {/* Document Icon */}
         <div
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg mt-0.5 ${
-            isError
-              ? 'bg-red-500/10 text-red-400'
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg mt-0.5"
+          style={{
+            backgroundColor: isError
+              ? 'rgba(239, 68, 68, 0.15)'
               : isActive
-              ? 'bg-blue-500/15 text-[#3b82f6]'
-              : 'bg-[#151924] text-[#6b7688]'
-          }`}
+              ? 'var(--accent-subtle)'
+              : 'var(--bg-surface-elevated)',
+            color: isError
+              ? '#ef4444'
+              : isActive
+              ? 'var(--text-blue)'
+              : 'var(--text-secondary)',
+          }}
         >
           <FileText size={16} />
         </div>
@@ -88,10 +104,11 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-1">
             <p
-              className={`text-xs font-semibold truncate ${
-                isActive ? 'text-[#3b82f6]' : 'text-[#e2e8f0]'
-              }`}
+              className="text-xs font-semibold truncate"
               title={doc.filename}
+              style={{
+                color: isActive ? 'var(--text-blue)' : 'var(--text-primary)',
+              }}
             >
               {doc.filename}
             </p>
@@ -102,7 +119,8 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
                 e.stopPropagation()
                 onRemove()
               }}
-              className="opacity-0 group-hover:opacity-100 p-1 rounded text-[#555e6d] hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+              className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity cursor-pointer hover:text-red-500"
+              style={{ color: 'var(--text-dim)' }}
               title="Remove document"
               aria-label="Remove document"
             >
@@ -110,7 +128,10 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-[#555e6d]">
+          <div
+            className="flex items-center gap-1.5 mt-0.5 text-[11px]"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
             <span>{formatBytes(doc.sizeBytes)}</span>
             {isReady && doc.pageCount > 0 && (
               <>
@@ -124,19 +145,37 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
           {isReady && (
             <div className="flex flex-wrap items-center gap-1.5 mt-2">
               {doc.indexedChunks != null && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#141924] text-[#8c94a4]">
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                  style={{
+                    backgroundColor: 'var(--bg-surface-elevated)',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
                   <Layers size={9} />
                   {doc.indexedChunks} chunks
                 </span>
               )}
               {doc.tableCount > 0 && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#141924] text-[#8c94a4]">
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                  style={{
+                    backgroundColor: 'var(--bg-surface-elevated)',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
                   <Table size={9} />
                   {doc.tableCount} tables
                 </span>
               )}
               {doc.imageCount > 0 && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#141924] text-[#8c94a4]">
+                <span
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+                  style={{
+                    backgroundColor: 'var(--bg-surface-elevated)',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
                   <ImageIcon size={9} />
                   {doc.imageCount} imgs
                 </span>
@@ -150,17 +189,28 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
       {isProcessing && (
         <div className="mt-2.5 space-y-1.5">
           <div className="flex items-center justify-between text-[11px]">
-            <span className="font-medium flex items-center gap-1 text-[#3b82f6]">
+            <span
+              className="font-medium flex items-center gap-1"
+              style={{ color: 'var(--text-blue)' }}
+            >
               <Loader2 size={11} className="animate-spin" />
               {STEP_LABELS[doc.step]}
             </span>
-            <span className="text-[#555e6d]">{progressPercent}%</span>
+            <span style={{ color: 'var(--text-tertiary)' }}>
+              {progressPercent}%
+            </span>
           </div>
 
-          <div className="h-1.5 w-full rounded-full overflow-hidden bg-[#161a26]">
+          <div
+            className="h-1.5 w-full rounded-full overflow-hidden"
+            style={{ backgroundColor: 'var(--bg-surface-elevated)' }}
+          >
             <div
-              className="h-full rounded-full bg-[#3b82f6] transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
+              className="h-full rounded-full transition-all duration-300"
+              style={{
+                width: `${progressPercent}%`,
+                backgroundColor: 'var(--accent-primary)',
+              }}
             />
           </div>
 
@@ -172,13 +222,14 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
               return (
                 <span
                   key={s}
-                  className={`text-[9px] uppercase tracking-wider font-semibold ${
-                    isCurrent
-                      ? 'text-[#3b82f6]'
+                  className="text-[9px] uppercase tracking-wider font-semibold"
+                  style={{
+                    color: isCurrent
+                      ? 'var(--text-blue)'
                       : isPast
-                      ? 'text-[#10b981]'
-                      : 'text-[#474f5e]'
-                  }`}
+                      ? 'var(--status-ready)'
+                      : 'var(--text-dim)',
+                  }}
                 >
                   {s === 'extracting' ? 'Extract' : s === 'chunking' ? 'Chunk' : s}
                 </span>
@@ -190,7 +241,13 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
 
       {/* Error state */}
       {isError && (
-        <div className="mt-2 flex items-start gap-1.5 p-2 rounded-lg text-[11px] bg-red-500/10 border border-red-500/20 text-red-400">
+        <div
+          className="mt-2 flex items-start gap-1.5 p-2 rounded-lg text-[11px] border text-red-500"
+          style={{
+            backgroundColor: 'rgba(239, 68, 68, 0.08)',
+            borderColor: 'rgba(239, 68, 68, 0.2)',
+          }}
+        >
           <AlertCircle size={13} className="shrink-0 mt-0.5" />
           <span className="line-clamp-2">{doc.error || 'Processing failed'}</span>
         </div>
@@ -199,7 +256,13 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
       {/* Active Checkmark Pill */}
       {isActive && isReady && (
         <div className="absolute right-2 top-3">
-          <span className="flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[#3b82f6] text-white">
+          <span
+            className="flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+            style={{
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--text-inverse)',
+            }}
+          >
             Active
           </span>
         </div>
@@ -215,27 +278,49 @@ export default function Sidebar({
   onUpload,
   onRemove,
   onClose,
+  onNewChat,
 }: SidebarProps) {
   const processingCount = documents.filter(
     (d) => d.step !== 'ready' && d.step !== 'error',
   ).length
 
   return (
-    <aside className="flex h-full w-80 shrink-0 flex-col bg-[#090b10] border-r border-white/[0.04] text-[#e6edf3]">
+    <aside
+      className="flex h-full w-80 shrink-0 flex-col border-r transition-colors duration-200"
+      style={{
+        backgroundColor: 'var(--bg-surface)',
+        borderColor: 'var(--border-subtle)',
+      }}
+    >
       {/* Sidebar Header */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-white/[0.04]">
+      <div
+        className="flex items-center justify-between px-4 py-3.5 border-b"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
         <div className="flex items-center gap-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#8c94a4]">
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider"
+            style={{ color: 'var(--text-secondary)' }}
+          >
             Documents
           </h2>
-          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#141822] text-[#555e6d]">
+          <span
+            className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
+            style={{
+              backgroundColor: 'var(--bg-surface-elevated)',
+              color: 'var(--text-tertiary)',
+            }}
+          >
             {documents.length}
           </span>
         </div>
 
         <div className="flex items-center gap-2">
           {processingCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#3b82f6]">
+            <span
+              className="inline-flex items-center gap-1 text-[11px] font-medium"
+              style={{ color: 'var(--text-blue)' }}
+            >
               <Loader2 size={11} className="animate-spin" />
               {processingCount}
             </span>
@@ -244,7 +329,11 @@ export default function Sidebar({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded-md text-[#6b7688] hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
+              className="p-1 rounded-md transition-colors cursor-pointer hover:opacity-80"
+              style={{
+                color: 'var(--text-tertiary)',
+                backgroundColor: 'var(--bg-surface-elevated)',
+              }}
               aria-label="Close documents sidebar"
             >
               <X size={15} />
@@ -253,18 +342,51 @@ export default function Sidebar({
         </div>
       </div>
 
+      {/* New Chat Action Button */}
+      {onNewChat && (
+        <div className="p-3 pb-1">
+          <button
+            onClick={() => {
+              onNewChat()
+              if (onClose) onClose()
+            }}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border transition-all cursor-pointer hover:opacity-90"
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              borderColor: 'var(--border-subtle)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            <Plus size={14} className="text-[var(--text-blue)]" />
+            <span>Start New Chat</span>
+          </button>
+        </div>
+      )}
+
       {/* Documents List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {documents.length === 0 ? (
           <div className="py-12 px-4 text-center">
-            <div className="flex h-10 w-10 mx-auto items-center justify-center rounded-xl mb-3 bg-[#12151e] text-[#555e6d]">
+            <div
+              className="flex h-10 w-10 mx-auto items-center justify-center rounded-xl mb-3"
+              style={{
+                backgroundColor: 'var(--bg-surface-elevated)',
+                color: 'var(--text-tertiary)',
+              }}
+            >
               <FileText size={18} />
             </div>
-            <p className="text-xs font-medium text-[#8c94a4]">
+            <p
+              className="text-xs font-medium"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               No documents yet
             </p>
-            <p className="text-[11px] mt-1 text-[#555e6d]">
-              Use the attach button in the chatbox or drop a file here.
+            <p
+              className="text-[11px] mt-1"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              Upload a PDF below to start chatting with citations.
             </p>
           </div>
         ) : (
@@ -281,7 +403,10 @@ export default function Sidebar({
       </div>
 
       {/* Upload Zone at bottom */}
-      <div className="p-3 border-t border-white/[0.04]">
+      <div
+        className="p-3 border-t"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
         <UploadZone onUpload={onUpload} disabled={processingCount > 0} />
       </div>
     </aside>

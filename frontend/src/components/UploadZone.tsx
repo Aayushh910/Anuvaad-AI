@@ -64,26 +64,42 @@ export default function UploadZone({ onUpload, disabled }: UploadZoneProps) {
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
         className={`group relative flex flex-col items-center justify-center p-3.5 rounded-xl border border-dashed transition-all duration-200 select-none ${
-          dragging
-            ? 'bg-blue-500/10 border-[#3b82f6]'
-            : 'bg-[#0d1017] hover:bg-[#121620] border-white/[0.06] hover:border-white/15'
-        } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+          disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+        }`}
+        style={{
+          backgroundColor: dragging
+            ? 'var(--accent-subtle)'
+            : 'var(--bg-card)',
+          borderColor: dragging
+            ? 'var(--accent-primary)'
+            : 'var(--border-medium)',
+        }}
         role="button"
         tabIndex={disabled ? -1 : 0}
       >
         <div
-          className={`flex h-8 w-8 items-center justify-center rounded-lg mb-2 transition-transform duration-200 group-hover:scale-105 ${
-            dragging ? 'bg-[#3b82f6] text-white' : 'bg-[#151924] text-[#3b82f6]'
-          }`}
+          className="flex h-8 w-8 items-center justify-center rounded-lg mb-2 transition-transform duration-200 group-hover:scale-105"
+          style={{
+            backgroundColor: dragging
+              ? 'var(--accent-primary)'
+              : 'var(--bg-surface-elevated)',
+            color: dragging ? 'var(--text-inverse)' : 'var(--text-blue)',
+          }}
         >
           {dragging ? <FileText size={16} /> : <UploadCloud size={16} />}
         </div>
 
-        <p className="text-xs font-semibold text-center mb-0.5 text-[#e2e8f0]">
+        <p
+          className="text-xs font-semibold text-center mb-0.5"
+          style={{ color: 'var(--text-primary)' }}
+        >
           {dragging ? 'Drop PDF here' : 'Upload PDF Document'}
         </p>
 
-        <p className="text-[11px] text-center text-[#555e6d]">
+        <p
+          className="text-[11px] text-center"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
           Drag & drop or browse · Up to 25 MB
         </p>
 
@@ -101,7 +117,7 @@ export default function UploadZone({ onUpload, disabled }: UploadZoneProps) {
       </div>
 
       {errorMessage && (
-        <div className="mt-2 flex items-start gap-1.5 p-2 rounded-lg text-xs bg-red-500/10 border border-red-500/20 text-red-400 animate-fade-in">
+        <div className="mt-2 flex items-start gap-1.5 p-2 rounded-lg text-xs bg-red-500/10 border border-red-500/20 text-red-500 animate-fade-in">
           <AlertCircle size={14} className="shrink-0 mt-0.5" />
           <span className="flex-1">{errorMessage}</span>
           <button

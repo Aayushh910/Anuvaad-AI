@@ -17,14 +17,16 @@ export default function App() {
 
   const handleSelectDocument = useCallback(
     (id: string) => {
-      if (id !== activeDocId) {
-        setActiveDocId(id)
-        clearMessages()
-      }
+      setActiveDocId(id)
       setSidebarOpen(false)
     },
-    [activeDocId, setActiveDocId, clearMessages],
+    [setActiveDocId],
   )
+
+  const handleNewChat = useCallback(() => {
+    clearMessages()
+    setSidebarOpen(false)
+  }, [clearMessages])
 
   const handleSendMessage = useCallback(
     (question: string) => {
@@ -34,8 +36,14 @@ export default function App() {
   )
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#07080b] text-[#e6edf3]">
-      {/* Sliding Off-Canvas Sidebar */}
+    <div
+      className="flex h-screen w-screen overflow-hidden select-text transition-colors duration-200"
+      style={{
+        backgroundColor: 'var(--bg-app)',
+        color: 'var(--text-primary)',
+      }}
+    >
+      {/* Sliding Off-Canvas Sidebar (Left) with Drop Shadow */}
       <div
         className={`fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out shadow-2xl ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -48,28 +56,34 @@ export default function App() {
           onUpload={upload}
           onRemove={removeDocument}
           onClose={() => setSidebarOpen(false)}
+          onNewChat={handleNewChat}
         />
       </div>
 
-      {/* Backdrop when sidebar is open */}
+      {/* Normal Click-Away Overlay (NO BLUR, background remains completely sharp and visible) */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-xs transition-opacity animate-fade-in"
+          className="fixed inset-0 z-30 bg-black/25 transition-opacity"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Main Chat Interface (100% full screen, free components, no boundaries or limits visible) */}
-      <ChatArea
-        messages={messages}
-        loading={loading}
-        activeDoc={activeDoc}
-        onSend={handleSendMessage}
-        onUpload={upload}
-        onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
-        dark={dark}
-        onToggleTheme={toggleTheme}
-      />
+      {/* Main Chat Interface */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        <ChatArea
+          messages={messages}
+          loading={loading}
+          activeDoc={activeDoc}
+          documents={documents}
+          onSelectDoc={handleSelectDocument}
+          onSend={handleSendMessage}
+          onUpload={upload}
+          onOpenSidebar={() => setSidebarOpen(true)}
+          onNewChat={handleNewChat}
+          dark={dark}
+          onToggleTheme={toggleTheme}
+        />
+      </div>
     </div>
   )
 }
