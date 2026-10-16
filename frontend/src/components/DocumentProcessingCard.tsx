@@ -123,7 +123,7 @@ export default function DocumentProcessingCard({
                   ) : (
                     <Loader2
                       size={13}
-                      className="animate-spin text-[var(--text-coral)] shrink-0"
+                      className="animate-spin text-[var(--text-brand)] shrink-0"
                     />
                   )}
                   <span>{step.title}</span>
@@ -136,7 +136,7 @@ export default function DocumentProcessingCard({
             ))}
           </div>
 
-          {/* Claude Attachment Card (matching bottom of Image 2) */}
+          {/* Document Attachment Card */}
           <div
             className="flex items-center justify-between p-3 rounded-xl border"
             style={{
@@ -149,7 +149,7 @@ export default function DocumentProcessingCard({
                 className="flex h-10 w-10 items-center justify-center rounded-xl"
                 style={{
                   backgroundColor: 'var(--accent-subtle)',
-                  color: 'var(--text-blue)',
+                  color: 'var(--text-brand)',
                 }}
               >
                 <FileText size={20} />

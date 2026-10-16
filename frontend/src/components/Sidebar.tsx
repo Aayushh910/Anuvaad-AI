@@ -8,7 +8,9 @@ import {
   Image as ImageIcon,
   X,
   Plus,
+  Home,
 } from 'lucide-react'
+import Logo from './Logo'
 import UploadZone from './UploadZone'
 import { STEP_LABELS, STEP_ORDER, type Document, type ProcessingStep } from '../types'
 
@@ -20,6 +22,8 @@ interface SidebarProps {
   onRemove: (id: string) => void
   onClose?: () => void
   onNewChat?: () => void
+  onNavigateLanding?: () => void
+  dark?: boolean
 }
 
 function formatBytes(bytes: number): string {
@@ -93,7 +97,7 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
             color: isError
               ? '#ef4444'
               : isActive
-              ? 'var(--text-blue)'
+              ? 'var(--text-brand)'
               : 'var(--text-secondary)',
           }}
         >
@@ -107,7 +111,7 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
               className="text-xs font-semibold truncate"
               title={doc.filename}
               style={{
-                color: isActive ? 'var(--text-blue)' : 'var(--text-primary)',
+                color: isActive ? 'var(--text-brand)' : 'var(--text-primary)',
               }}
             >
               {doc.filename}
@@ -191,7 +195,7 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
           <div className="flex items-center justify-between text-[11px]">
             <span
               className="font-medium flex items-center gap-1"
-              style={{ color: 'var(--text-blue)' }}
+              style={{ color: 'var(--text-brand)' }}
             >
               <Loader2 size={11} className="animate-spin" />
               {STEP_LABELS[doc.step]}
@@ -222,16 +226,15 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
               return (
                 <span
                   key={s}
-                  className="text-[9px] uppercase tracking-wider font-semibold"
-                  style={{
-                    color: isCurrent
-                      ? 'var(--text-blue)'
+                  className={`text-[9px] uppercase tracking-wider font-semibold ${
+                    isCurrent
+                      ? 'text-[var(--text-brand)]'
                       : isPast
-                      ? 'var(--status-ready)'
-                      : 'var(--text-dim)',
-                  }}
+                      ? 'text-emerald-500'
+                      : 'text-[var(--text-dim)]'
+                  }`}
                 >
-                  {s === 'extracting' ? 'Extract' : s === 'chunking' ? 'Chunk' : s}
+                  {s.slice(0, 3)}
                 </span>
               )
             })}
@@ -241,30 +244,9 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
 
       {/* Error state */}
       {isError && (
-        <div
-          className="mt-2 flex items-start gap-1.5 p-2 rounded-lg text-[11px] border text-red-500"
-          style={{
-            backgroundColor: 'rgba(239, 68, 68, 0.08)',
-            borderColor: 'rgba(239, 68, 68, 0.2)',
-          }}
-        >
+        <div className="mt-2 flex items-start gap-1 text-[11px] text-red-500 bg-red-500/10 p-2 rounded-lg">
           <AlertCircle size={13} className="shrink-0 mt-0.5" />
-          <span className="line-clamp-2">{doc.error || 'Processing failed'}</span>
-        </div>
-      )}
-
-      {/* Active Checkmark Pill */}
-      {isActive && isReady && (
-        <div className="absolute right-2 top-3">
-          <span
-            className="flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-            style={{
-              backgroundColor: 'var(--accent-primary)',
-              color: 'var(--text-inverse)',
-            }}
-          >
-            Active
-          </span>
+          <span className="truncate">{doc.error || 'Processing failed'}</span>
         </div>
       )}
     </div>
@@ -279,6 +261,8 @@ export default function Sidebar({
   onRemove,
   onClose,
   onNewChat,
+  onNavigateLanding,
+  dark = true,
 }: SidebarProps) {
   const processingCount = documents.filter(
     (d) => d.step !== 'ready' && d.step !== 'error',
@@ -292,9 +276,62 @@ export default function Sidebar({
         borderColor: 'var(--border-subtle)',
       }}
     >
-      {/* Sidebar Header */}
+      {/* Sidebar Brand Top Bar */}
       <div
         className="flex items-center justify-between px-4 py-3.5 border-b"
+        style={{ borderColor: 'var(--border-subtle)' }}
+      >
+        <div
+          onClick={() => {
+            if (onNavigateLanding) {
+              onNavigateLanding()
+              if (onClose) onClose()
+            }
+          }}
+          className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition-opacity"
+          title="Return to Landing Page"
+        >
+          <Logo variant="horizontal" dark={dark} className="h-6 w-auto" />
+        </div>
+
+        <div className="flex items-center gap-1">
+          {onNavigateLanding && (
+            <button
+              onClick={() => {
+                onNavigateLanding()
+                if (onClose) onClose()
+              }}
+              className="p-1.5 rounded-lg transition-colors cursor-pointer hover:opacity-80"
+              style={{
+                color: 'var(--text-tertiary)',
+                backgroundColor: 'var(--bg-surface-elevated)',
+              }}
+              title="Home / Landing"
+              aria-label="Home / Landing"
+            >
+              <Home size={14} />
+            </button>
+          )}
+
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg transition-colors cursor-pointer hover:opacity-80"
+              style={{
+                color: 'var(--text-tertiary)',
+                backgroundColor: 'var(--bg-surface-elevated)',
+              }}
+              aria-label="Close documents sidebar"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Documents Header & Badge */}
+      <div
+        className="flex items-center justify-between px-4 py-2.5 border-b"
         style={{ borderColor: 'var(--border-subtle)' }}
       >
         <div className="flex items-center gap-2">
@@ -315,31 +352,15 @@ export default function Sidebar({
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          {processingCount > 0 && (
-            <span
-              className="inline-flex items-center gap-1 text-[11px] font-medium"
-              style={{ color: 'var(--text-blue)' }}
-            >
-              <Loader2 size={11} className="animate-spin" />
-              {processingCount}
-            </span>
-          )}
-
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="p-1 rounded-md transition-colors cursor-pointer hover:opacity-80"
-              style={{
-                color: 'var(--text-tertiary)',
-                backgroundColor: 'var(--bg-surface-elevated)',
-              }}
-              aria-label="Close documents sidebar"
-            >
-              <X size={15} />
-            </button>
-          )}
-        </div>
+        {processingCount > 0 && (
+          <span
+            className="inline-flex items-center gap-1 text-[11px] font-medium"
+            style={{ color: 'var(--text-brand)' }}
+          >
+            <Loader2 size={11} className="animate-spin" />
+            {processingCount} processing
+          </span>
+        )}
       </div>
 
       {/* New Chat Action Button */}
@@ -350,14 +371,14 @@ export default function Sidebar({
               onNewChat()
               if (onClose) onClose()
             }}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border transition-all cursor-pointer hover:opacity-90"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border transition-all cursor-pointer hover:opacity-90 shadow-xs"
             style={{
               backgroundColor: 'var(--bg-card)',
               borderColor: 'var(--border-subtle)',
               color: 'var(--text-primary)',
             }}
           >
-            <Plus size={14} className="text-[var(--text-blue)]" />
+            <Plus size={14} className="text-[var(--text-brand)]" />
             <span>Start New Chat</span>
           </button>
         </div>
@@ -368,13 +389,13 @@ export default function Sidebar({
         {documents.length === 0 ? (
           <div className="py-12 px-4 text-center">
             <div
-              className="flex h-10 w-10 mx-auto items-center justify-center rounded-xl mb-3"
+              className="flex h-12 w-12 items-center justify-center rounded-xl mx-auto mb-3"
               style={{
                 backgroundColor: 'var(--bg-surface-elevated)',
                 color: 'var(--text-tertiary)',
               }}
             >
-              <FileText size={18} />
+              <FileText size={22} />
             </div>
             <p
               className="text-xs font-medium"
@@ -386,7 +407,7 @@ export default function Sidebar({
               className="text-[11px] mt-1"
               style={{ color: 'var(--text-tertiary)' }}
             >
-              Upload a PDF below to start chatting with citations.
+              Upload a PDF below to start chatting with your data.
             </p>
           </div>
         ) : (
@@ -402,12 +423,12 @@ export default function Sidebar({
         )}
       </div>
 
-      {/* Upload Zone at bottom */}
+      {/* Upload Zone at Bottom */}
       <div
         className="p-3 border-t"
         style={{ borderColor: 'var(--border-subtle)' }}
       >
-        <UploadZone onUpload={onUpload} disabled={processingCount > 0} />
+        <UploadZone onUpload={onUpload} />
       </div>
     </aside>
   )

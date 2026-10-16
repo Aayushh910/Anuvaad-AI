@@ -83,7 +83,7 @@ export default function UploadZone({ onUpload, disabled }: UploadZoneProps) {
             backgroundColor: dragging
               ? 'var(--accent-primary)'
               : 'var(--bg-surface-elevated)',
-            color: dragging ? 'var(--text-inverse)' : 'var(--text-blue)',
+            color: dragging ? 'var(--text-inverse)' : 'var(--text-brand)',
           }}
         >
           {dragging ? <FileText size={16} /> : <UploadCloud size={16} />}

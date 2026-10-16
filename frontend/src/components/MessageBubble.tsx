@@ -16,8 +16,11 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
     return (
       <div className="flex justify-end w-full animate-fade-in my-2.5">
         <div
-          className="text-white px-5 py-2.5 rounded-2xl text-[14.5px] font-normal max-w-lg shadow-sm leading-relaxed"
-          style={{ backgroundColor: 'var(--accent-bubble)' }}
+          className="px-5 py-2.5 rounded-2xl text-[14.5px] font-medium max-w-lg shadow-sm leading-relaxed"
+          style={{
+            backgroundColor: 'var(--accent-bubble)',
+            color: 'var(--text-inverse)',
+          }}
         >
           {message.content}
         </div>
@@ -31,7 +34,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       {/* Markdown formatted text */}
       <MarkdownRenderer content={message.content} />
 
-      {/* Inline Sources Display (Restored as requested: "for source past make it like as it was before no need to seprate sidebar") */}
+      {/* Inline Sources Display */}
       {sources.length > 0 && (
         <div className="pt-1">
           <button
@@ -39,7 +42,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             className="inline-flex items-center gap-1.5 text-xs transition-colors cursor-pointer py-1 font-medium hover:opacity-80"
             style={{ color: 'var(--text-secondary)' }}
           >
-            <FileText size={13} className="text-[var(--text-blue)]" />
+            <FileText size={13} className="text-[var(--text-brand)]" />
             <span>View Sources ({sources.length})</span>
             {sourcesOpen ? (
               <ChevronUp size={13} style={{ color: 'var(--text-dim)' }} />
@@ -73,7 +76,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
                           className="flex h-4 w-4 items-center justify-center rounded-sm font-semibold text-[10px]"
                           style={{
                             backgroundColor: 'var(--accent-subtle)',
-                            color: 'var(--text-blue)',
+                            color: 'var(--text-brand)',
                           }}
                         >
                           {idx + 1}
@@ -95,7 +98,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
                       </div>
                       <span
                         className="font-semibold text-[11px]"
-                        style={{ color: 'var(--text-blue)' }}
+                        style={{ color: 'var(--text-brand)' }}
                       >
                         {matchPct}
                       </span>
