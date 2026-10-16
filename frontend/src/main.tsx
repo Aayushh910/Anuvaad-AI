@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
 
-const saved = localStorage.getItem('documind-theme')
+const saved = localStorage.getItem('anuvaad-theme') || localStorage.getItem('documind-theme')
 if (saved === 'light') {
   document.documentElement.classList.remove('dark')
 } else {

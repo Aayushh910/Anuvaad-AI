@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 
 export function useTheme() {
   const [dark, setDark] = useState(() => {
-    const saved = localStorage.getItem('documind-theme')
+    const saved = localStorage.getItem('anuvaad-theme') || localStorage.getItem('documind-theme')
     return saved !== 'light'
   })
 
@@ -14,7 +14,7 @@ export function useTheme() {
       document.documentElement.classList.add('light')
       document.documentElement.classList.remove('dark')
     }
-    localStorage.setItem('documind-theme', dark ? 'dark' : 'light')
+    localStorage.setItem('anuvaad-theme', dark ? 'dark' : 'light')
   }, [dark])
 
   const toggle = () => setDark((prev) => !prev)

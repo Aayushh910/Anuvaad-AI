@@ -1,91 +1,95 @@
 @import "tailwindcss";
 
-/* ─── Base & Theme Design Tokens with Modern Fonts ─── */
+/* ─── Anuvaad AI Design System Tokens ─── */
 :root,
 .dark {
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-display: 'Outfit', 'Plus Jakarta Sans', sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 
-  /* Pitch Black Dark Theme */
-  --bg-app: #07080b;
-  --bg-surface: #0f121a;
-  --bg-surface-elevated: #141824;
-  --bg-input: #12151e;
-  --bg-hover: #191e2b;
-  --bg-card: #0d1017;
-  --bg-source-card: #0f121a;
+  /* Anuvaad Dark Theme: Deep Midnight Indigo & Warm Amber (#1B1B3A & #F2A33A) */
+  --bg-app: #0c0e1a;
+  --bg-surface: #121526;
+  --bg-surface-elevated: #181c33;
+  --bg-input: #121528;
+  --bg-hover: #1f233f;
+  --bg-card: #111424;
+  --bg-source-card: #13172b;
+  --bg-thinking: rgba(242, 163, 58, 0.05);
 
   /* Typography */
-  --text-primary: #e6edf3;
+  --text-primary: #F7F4EE;    /* Exact soft warm cream from logo */
   --text-bold: #ffffff;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
-  --text-dim: #475569;
-  --text-inverse: #ffffff;
-  --text-blue: #3b82f6;
-  --text-coral: #e07a5f;
+  --text-secondary: #9ea5c4;  /* Indigo-tinted slate */
+  --text-tertiary: #6b7296;
+  --text-dim: #494f70;
+  --text-inverse: #1B1B3A;
+  --text-brand: #F2A33A;      /* Warm golden saffron */
+  --text-amber: #F2A33A;
 
-  /* Accent Blue */
-  --accent-primary: #2563eb;
-  --accent-hover: #3b82f6;
-  --accent-bubble: #3b82f6;
-  --accent-subtle: rgba(59, 130, 246, 0.12);
+  /* Accent & Brand Colors */
+  --accent-primary: #F2A33A;
+  --accent-hover: #ffad42;
+  --accent-bubble: #F2A33A;
+  --accent-subtle: rgba(242, 163, 58, 0.12);
+  --accent-glow: rgba(242, 163, 58, 0.25);
 
-  /* Status */
+  /* Status Indicators */
   --status-ready: #10b981;
   --status-error: #ef4444;
 
-  /* Subtle Borders */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-medium: rgba(255, 255, 255, 0.12);
-  --border-input: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(59, 130, 246, 0.45);
+  /* Borders */
+  --border-subtle: rgba(247, 244, 238, 0.07);
+  --border-medium: rgba(247, 244, 238, 0.14);
+  --border-input: rgba(247, 244, 238, 0.10);
+  --border-focus: rgba(242, 163, 58, 0.55);
 
-  --citation-bg: rgba(59, 130, 246, 0.15);
-  --citation-text: #60a5fa;
-  --quote-border: #3b82f6;
+  --citation-bg: rgba(242, 163, 58, 0.12);
+  --citation-text: #f5b054;
+  --quote-border: #F2A33A;
 }
 
 .light {
-  /* Crisp Light Theme */
-  --bg-app: #fafafa;
+  /* Anuvaad Light Theme: Warm Cream Canvas & Deep Midnight (#F7F4EE & #1B1B3A) */
+  --bg-app: #FAF8F5;          /* Warm cream canvas matching logo cream */
   --bg-surface: #ffffff;
-  --bg-surface-elevated: #f1f3f7;
+  --bg-surface-elevated: #F3EFE9;
   --bg-input: #ffffff;
-  --bg-hover: #eaeef4;
+  --bg-hover: #EFE9DF;
   --bg-card: #ffffff;
-  --bg-source-card: #f8fafc;
+  --bg-source-card: #F7F4EE;
+  --bg-thinking: rgba(224, 138, 18, 0.06);
 
   /* Typography */
-  --text-primary: #1e293b;
-  --text-bold: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #64748b;
-  --text-dim: #94a3b8;
+  --text-primary: #1B1B3A;    /* Exact deep midnight navy from logo */
+  --text-bold: #0e0e24;
+  --text-secondary: #535473;
+  --text-tertiary: #7d7e9b;
+  --text-dim: #a4a5ba;
   --text-inverse: #ffffff;
-  --text-blue: #2563eb;
-  --text-coral: #c25e3d;
+  --text-brand: #E08A12;
+  --text-amber: #E08A12;
 
-  /* Accent Blue */
-  --accent-primary: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-bubble: #2563eb;
-  --accent-subtle: rgba(37, 99, 235, 0.08);
+  /* Accent & Brand Colors */
+  --accent-primary: #E08A12;
+  --accent-hover: #c97705;
+  --accent-bubble: #E08A12;
+  --accent-subtle: rgba(224, 138, 18, 0.10);
+  --accent-glow: rgba(224, 138, 18, 0.20);
 
-  /* Status */
+  /* Status Indicators */
   --status-ready: #059669;
   --status-error: #dc2626;
 
-  /* Clean Borders */
-  --border-subtle: rgba(0, 0, 0, 0.08);
-  --border-medium: rgba(0, 0, 0, 0.15);
-  --border-input: rgba(0, 0, 0, 0.14);
-  --border-focus: rgba(37, 99, 235, 0.4);
+  /* Borders */
+  --border-subtle: rgba(27, 27, 58, 0.08);
+  --border-medium: rgba(27, 27, 58, 0.15);
+  --border-input: rgba(27, 27, 58, 0.12);
+  --border-focus: rgba(224, 138, 18, 0.45);
 
-  --citation-bg: rgba(37, 99, 235, 0.1);
-  --citation-text: #1d4ed8;
-  --quote-border: #2563eb;
+  --citation-bg: rgba(224, 138, 18, 0.10);
+  --citation-text: #c27405;
+  --quote-border: #E08A12;
 }
 
 *,
@@ -94,13 +98,18 @@
   box-sizing: border-box;
 }
 
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-app);
   color: var(--text-primary);
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.011em;
@@ -118,92 +127,72 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-medium);
+  background: rgba(150, 150, 170, 0.2);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-tertiary);
+  background: rgba(150, 150, 170, 0.4);
 }
 
-/* Markdown Formatted Typography */
-.prose-custom strong,
-.prose-custom b {
-  font-weight: 600;
-  color: var(--text-bold);
-}
-
-.prose-custom em,
-.prose-custom i {
-  font-style: italic;
-  color: inherit;
-}
-
-.prose-custom blockquote {
-  border-left: 3px solid var(--quote-border);
-  padding-left: 14px;
-  margin: 8px 0;
-  color: var(--text-secondary);
-  font-style: italic;
-}
-
-.prose-custom code {
-  background-color: var(--bg-surface-elevated);
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.88em;
-  color: var(--text-primary);
-}
-
-.prose-custom h1,
-.prose-custom h2,
-.prose-custom h3,
-.prose-custom h4 {
-  font-family: var(--font-display);
-  font-weight: 600;
-  color: var(--text-bold);
-  margin-top: 14px;
-  margin-bottom: 6px;
-}
-
-.prose-custom ul {
-  list-style-type: disc;
-  padding-left: 20px;
-  margin: 8px 0;
-}
-
-.prose-custom li {
-  margin-bottom: 4px;
-}
-
-.prose-custom p {
-  margin-bottom: 10px;
-}
-
-.prose-custom p:last-child {
-  margin-bottom: 0;
-}
-
-.font-display {
-  font-family: var(--font-display);
-}
-
-.font-serif-claude {
-  font-family: var(--font-serif);
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.22s ease-out forwards;
-}
-
+/* Fluid animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.08);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float {
+  animation: floatSlow 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 5s ease-in-out infinite;
+}
+
+/* Brand glow utility */
+.brand-glow {
+  box-shadow: 0 0 30px var(--accent-glow);
+}
+
+/* Gradient text utility */
+.text-gradient-amber {
+  background: linear-gradient(135deg, #F2A33A 0%, #ffc06e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.light .text-gradient-amber {
+  background: linear-gradient(135deg, #E08A12 0%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
