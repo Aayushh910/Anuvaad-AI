@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Sidebar from './components/Sidebar'
 import ChatArea from './components/ChatArea'
+import LandingPage from './components/LandingPage'
 import { useDocuments } from './hooks/useDocuments'
 import { useChat } from './hooks/useChat'
 import { useTheme } from './hooks/useTheme'
@@ -9,18 +10,57 @@ export default function App() {
   const { dark, toggle: toggleTheme } = useTheme()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  // Default route is '/' (Landing Page) unless URL path is '/chat'
+  const [currentRoute, setCurrentRoute] = useState<'/' | '/chat'>(() => {
+    if (typeof window !== 'undefined' && window.location.pathname === '/chat') {
+      return '/chat'
+    }
+    return '/'
+  })
+
+  const [pendingQuery, setPendingQuery] = useState<string | undefined>()
+  const [isTransitioning, setIsTransitioning] = useState(false)
+
   const { documents, activeDocId, setActiveDocId, upload, removeDocument } =
     useDocuments()
   const { messages, loading, sendMessage, clearMessages } = useChat()
 
   const activeDoc = documents.find((d) => d.id === activeDocId) ?? null
 
+  // Browser history sync (handles Back & Forward buttons)
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname === '/chat' ? '/chat' : '/'
+      setCurrentRoute(path)
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  // Smooth route transition without reloading
+  const navigate = useCallback((to: '/' | '/chat', query?: string) => {
+    if (query !== undefined) {
+      setPendingQuery(query)
+    }
+    setIsTransitioning(true)
+    setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        window.history.pushState(null, '', to)
+      }
+      setCurrentRoute(to)
+      setIsTransitioning(false)
+    }, 180)
+  }, [])
+
   const handleSelectDocument = useCallback(
     (id: string) => {
       setActiveDocId(id)
       setSidebarOpen(false)
+      if (currentRoute !== '/chat') {
+        navigate('/chat')
+      }
     },
-    [setActiveDocId],
+    [setActiveDocId, currentRoute, navigate],
   )
 
   const handleNewChat = useCallback(() => {
@@ -35,9 +75,22 @@ export default function App() {
     [sendMessage, activeDocId],
   )
 
+  if (currentRoute === '/') {
+    return (
+      <LandingPage
+        dark={dark}
+        onToggleTheme={toggleTheme}
+        onNavigateChat={(initialQuery) => navigate('/chat', initialQuery)}
+        isTransitioning={isTransitioning}
+      />
+    )
+  }
+
   return (
     <div
-      className="flex h-screen w-screen overflow-hidden select-text transition-colors duration-200"
+      className={`flex h-screen w-screen overflow-hidden select-text transition-all duration-200 ${
+        isTransitioning ? 'opacity-0 scale-[0.99]' : 'opacity-100 scale-100'
+      }`}
       style={{
         backgroundColor: 'var(--bg-app)',
         color: 'var(--text-primary)',
@@ -57,6 +110,8 @@ export default function App() {
           onRemove={removeDocument}
           onClose={() => setSidebarOpen(false)}
           onNewChat={handleNewChat}
+          onNavigateLanding={() => navigate('/')}
+          dark={dark}
         />
       </div>
 
@@ -80,6 +135,8 @@ export default function App() {
           onUpload={upload}
           onOpenSidebar={() => setSidebarOpen(true)}
           onNewChat={handleNewChat}
+          onNavigateLanding={() => navigate('/')}
+          initialQuery={pendingQuery}
           dark={dark}
           onToggleTheme={toggleTheme}
         />
