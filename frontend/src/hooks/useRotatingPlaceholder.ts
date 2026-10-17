@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react'
 
 export const PLACEHOLDER_MESSAGES = [
-  'What would you like to understand?',
-  'Ask a question or explore your PDF...',
-  'Find answers, insights, and key details...',
-  'Type or speak your question...',
+  'Ask anything about your document...',
 ]
 
 export interface RotatingPlaceholderState {
@@ -23,7 +20,7 @@ export function useRotatingPlaceholder(
   const [isFading, setIsFading] = useState(false)
 
   useEffect(() => {
-    let fadeTimeout: NodeJS.Timeout
+    let fadeTimeout: ReturnType<typeof setTimeout>
 
     const interval = setInterval(() => {
       // Step 1: Trigger smooth fade out

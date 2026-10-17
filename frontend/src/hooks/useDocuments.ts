@@ -49,7 +49,7 @@ export function useDocuments() {
   }, [])
 
   const upload = useCallback(
-    async (file: File) => {
+    async (file: File, onUploaded?: (docId: string) => void): Promise<string | null> => {
       const tempId = `tmp-${Date.now()}`
       const placeholder: Document = {
         id: tempId,
@@ -69,7 +69,7 @@ export function useDocuments() {
         const up = await uploadDocument(file, (pct) => {
           setDocuments((prev) =>
             prev.map((d) =>
-              d.id === tempId ? { ...d, uploadProgress: pct } as Document & { uploadProgress: number } : d,
+              d.id === tempId ? ({ ...d, uploadProgress: pct } as Document & { uploadProgress: number }) : d,
             ),
           )
         })
@@ -89,6 +89,11 @@ export function useDocuments() {
           step: 'chunking',
         }
         setDocuments((prev) => prev.map((d) => (d.id === tempId ? doc : d)))
+        setActiveDocId(docId)
+
+        if (onUploaded) {
+          onUploaded(docId)
+        }
 
         // Step 3: Index
         updateDoc(docId, { step: 'indexing' })
@@ -101,7 +106,7 @@ export function useDocuments() {
           indexedTables: idx.indexed_tables,
         })
 
-        setActiveDocId(docId)
+        return docId
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Unknown error'
         setDocuments((prev) =>
@@ -111,6 +116,7 @@ export function useDocuments() {
               : d,
           ),
         )
+        return null
       }
     },
     [updateDoc],

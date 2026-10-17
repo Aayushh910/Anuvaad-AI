@@ -36,7 +36,7 @@ interface ChatAreaProps {
 }
 
 const SUGGESTED_PROMPTS = [
-  'Summarize in your language',
+  'Summarize document',
   'Extract table data & metrics',
   'Key takeaways & conclusions',
 ]
@@ -67,13 +67,23 @@ export default function ChatArea({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const docDropdownRef = useRef<HTMLDivElement>(null)
 
-  // Sync initial query if passed
+  // Sync initial query if passed and position cursor at end
   useEffect(() => {
     if (initialQuery) {
       setInput(initialQuery)
       if (documents.length === 0) {
         setShowUploadAlert(true)
       }
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus()
+          textareaRef.current.setSelectionRange(initialQuery.length, initialQuery.length)
+        }
+      }, 50)
+    } else {
+      setTimeout(() => {
+        textareaRef.current?.focus()
+      }, 50)
     }
   }, [initialQuery, documents.length])
 
@@ -290,10 +300,10 @@ export default function ChatArea({
           <div className="flex flex-col items-center mb-5 select-none text-center">
             <Logo variant="horizontal" dark={dark} className="h-9 sm:h-10 w-auto mb-2" />
             <h1
-              className="text-xl sm:text-2xl font-semibold tracking-tight"
+              className="text-xl sm:text-2xl font-semibold tracking-tight whitespace-nowrap"
               style={{ color: 'var(--text-primary)' }}
             >
-              Every document. Your language.
+              Ask your documents anything.
             </h1>
           </div>
 
@@ -359,9 +369,8 @@ export default function ChatArea({
                 />
                 {!input && (
                   <span
-                    className={`pointer-events-none absolute left-1 top-1 text-[14.5px] leading-relaxed select-none transition-all duration-400 ease-in-out truncate max-w-[95%] ${
-                      isFading ? 'opacity-0 -translate-y-1' : 'opacity-100 translate-y-0'
-                    }`}
+                    className={`pointer-events-none absolute left-1 top-1 text-[14.5px] leading-relaxed select-none transition-all duration-400 ease-in-out truncate max-w-[95%] ${isFading ? 'opacity-0 -translate-y-1' : 'opacity-100 translate-y-0'
+                      }`}
                     style={{ color: 'var(--text-tertiary)' }}
                   >
                     {dynamicPlaceholder}
@@ -425,11 +434,10 @@ export default function ChatArea({
                             onSelectDoc('')
                             setDocMenuOpen(false)
                           }}
-                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
-                            !activeDoc
+                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${!activeDoc
                               ? 'bg-[var(--accent-subtle)] text-[var(--accent-primary)] font-medium'
                               : 'hover:bg-[var(--bg-hover)] text-[var(--text-secondary)]'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-2 truncate">
                             <Sparkles size={12} className="shrink-0 text-[var(--text-brand)]" />
@@ -449,11 +457,10 @@ export default function ChatArea({
                                   onSelectDoc(doc.id)
                                   setDocMenuOpen(false)
                                 }}
-                                className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
-                                  isSelected
+                                className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${isSelected
                                     ? 'bg-[var(--accent-subtle)] text-[var(--accent-primary)] font-medium'
                                     : 'hover:bg-[var(--bg-hover)] text-[var(--text-secondary)]'
-                                }`}
+                                  }`}
                               >
                                 <div className="flex items-center gap-2 truncate">
                                   <FileText size={12} className="shrink-0 text-[var(--text-brand)]" />
@@ -599,9 +606,8 @@ export default function ChatArea({
                   />
                   {!input && (
                     <span
-                      className={`pointer-events-none absolute left-0 top-1 text-[14.5px] leading-relaxed select-none transition-all duration-400 ease-in-out truncate max-w-[85%] ${
-                        isFading ? 'opacity-0 -translate-y-1' : 'opacity-100 translate-y-0'
-                      }`}
+                      className={`pointer-events-none absolute left-0 top-1 text-[14.5px] leading-relaxed select-none transition-all duration-400 ease-in-out truncate max-w-[85%] ${isFading ? 'opacity-0 -translate-y-1' : 'opacity-100 translate-y-0'
+                        }`}
                       style={{ color: 'var(--text-tertiary)' }}
                     >
                       {dynamicPlaceholder}
@@ -665,11 +671,10 @@ export default function ChatArea({
                               onSelectDoc('')
                               setDocMenuOpen(false)
                             }}
-                            className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
-                              !activeDoc
+                            className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${!activeDoc
                                 ? 'bg-[var(--accent-subtle)] text-[var(--accent-primary)] font-medium'
                                 : 'hover:bg-[var(--bg-hover)] text-[var(--text-secondary)]'
-                            }`}
+                              }`}
                           >
                             <div className="flex items-center gap-2 truncate">
                               <Sparkles size={12} className="shrink-0 text-[var(--text-brand)]" />
@@ -689,11 +694,10 @@ export default function ChatArea({
                                     onSelectDoc(doc.id)
                                     setDocMenuOpen(false)
                                   }}
-                                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
-                                    isSelected
+                                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${isSelected
                                       ? 'bg-[var(--accent-subtle)] text-[var(--accent-primary)] font-medium'
                                       : 'hover:bg-[var(--bg-hover)] text-[var(--text-secondary)]'
-                                  }`}
+                                    }`}
                                 >
                                   <div className="flex items-center gap-2 truncate">
                                     <FileText size={12} className="shrink-0 text-[var(--text-brand)]" />

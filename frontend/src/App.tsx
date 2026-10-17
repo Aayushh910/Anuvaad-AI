@@ -38,9 +38,12 @@ export default function App() {
   }, [])
 
   // Smooth route transition without reloading
-  const navigate = useCallback((to: '/' | '/chat', query?: string) => {
+  const navigate = useCallback((to: '/' | '/chat', query?: string, openSidebar: boolean = false) => {
     if (query !== undefined) {
       setPendingQuery(query)
+    }
+    if (openSidebar) {
+      setSidebarOpen(true)
     }
     setIsTransitioning(true)
     setTimeout(() => {
@@ -49,7 +52,7 @@ export default function App() {
       }
       setCurrentRoute(to)
       setIsTransitioning(false)
-    }, 180)
+    }, 240)
   }, [])
 
   const handleSelectDocument = useCallback(
@@ -80,7 +83,13 @@ export default function App() {
       <LandingPage
         dark={dark}
         onToggleTheme={toggleTheme}
-        onNavigateChat={(initialQuery) => navigate('/chat', initialQuery)}
+        onNavigateChat={(initialQuery?: string, openSidebar?: boolean) =>
+          navigate('/chat', initialQuery, openSidebar)
+        }
+        onUpload={upload}
+        documents={documents}
+        activeDocId={activeDocId}
+        onSelectDoc={handleSelectDocument}
         isTransitioning={isTransitioning}
       />
     )
@@ -123,8 +132,8 @@ export default function App() {
         />
       )}
 
-      {/* Main Chat Interface */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      {/* Main Chat Interface with smooth slide-up fade */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden animate-slide-up-fade">
         <ChatArea
           messages={messages}
           loading={loading}

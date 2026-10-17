@@ -93,7 +93,7 @@ export default function UploadZone({ onUpload, disabled }: UploadZoneProps) {
           className="text-xs font-semibold text-center mb-0.5"
           style={{ color: 'var(--text-primary)' }}
         >
-          {dragging ? 'Drop PDF here' : 'Upload PDF Document'}
+          {dragging ? 'Drop PDF here' : 'Upload a document to begin.'}
         </p>
 
         <p
