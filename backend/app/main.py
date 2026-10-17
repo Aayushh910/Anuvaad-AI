@@ -28,7 +28,10 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
     ],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -73,6 +76,26 @@ def api_health_check():
         "status": "healthy",
         "api_version": "v1",
     }
+
+
+@app.get("/api/v1/documents", tags=["Documents"])
+def list_documents():
+    docs = []
+    for meta_file in PROCESSED_DIR.glob("*.json"):
+        if (
+            meta_file.name.endswith(".images.json")
+            or meta_file.name.endswith(".tables.json")
+            or meta_file.name.endswith(".pages.json")
+        ):
+            continue
+        try:
+            data = json.loads(meta_file.read_text(encoding="utf-8"))
+            docs.append(data)
+        except Exception:
+            continue
+    # Sort by processed_at descending if available
+    docs.sort(key=lambda d: d.get("processed_at", ""), reverse=True)
+    return docs
 
 
 @app.post("/api/v1/documents/upload", tags=["Documents"])

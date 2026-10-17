@@ -1,0 +1,228 @@
+@import "tailwindcss";
+
+/* ─── Anuvaad AI Design System Tokens ─── */
+:root,
+.dark {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+
+  /* Anuvaad Dark Theme: Deep Midnight Indigo & Warm Amber (#1B1B3A & #F2A33A) */
+  --bg-app: #0c0e1a;
+  --bg-surface: #121526;
+  --bg-surface-elevated: #181c33;
+  --bg-input: #121528;
+  --bg-hover: #1f233f;
+  --bg-card: #111424;
+  --bg-source-card: #13172b;
+  --bg-thinking: rgba(242, 163, 58, 0.05);
+
+  /* Typography */
+  --text-primary: #F7F4EE;    /* Exact soft warm cream from logo */
+  --text-bold: #ffffff;
+  --text-secondary: #9ea5c4;  /* Indigo-tinted slate */
+  --text-tertiary: #6b7296;
+  --text-dim: #494f70;
+  --text-inverse: #1B1B3A;
+  --text-brand: #F2A33A;      /* Warm golden saffron */
+  --text-amber: #F2A33A;
+
+  /* Accent & Brand Colors */
+  --accent-primary: #F2A33A;
+  --accent-hover: #ffad42;
+  --accent-bubble: #F2A33A;
+  --accent-subtle: rgba(242, 163, 58, 0.12);
+  --accent-glow: rgba(242, 163, 58, 0.25);
+
+  /* Status Indicators */
+  --status-ready: #10b981;
+  --status-error: #ef4444;
+
+  /* Borders */
+  --border-subtle: rgba(247, 244, 238, 0.07);
+  --border-medium: rgba(247, 244, 238, 0.14);
+  --border-input: rgba(247, 244, 238, 0.10);
+  --border-focus: rgba(242, 163, 58, 0.55);
+
+  --citation-bg: rgba(242, 163, 58, 0.12);
+  --citation-text: #f5b054;
+  --quote-border: #F2A33A;
+}
+
+.light {
+  /* Anuvaad Light Theme: Warm Cream Canvas & Deep Midnight (#F7F4EE & #1B1B3A) */
+  --bg-app: #FAF8F5;          /* Warm cream canvas matching logo cream */
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #F3EFE9;
+  --bg-input: #ffffff;
+  --bg-hover: #EFE9DF;
+  --bg-card: #ffffff;
+  --bg-source-card: #F7F4EE;
+  --bg-thinking: rgba(224, 138, 18, 0.06);
+
+  /* Typography */
+  --text-primary: #1B1B3A;    /* Exact deep midnight navy from logo */
+  --text-bold: #0e0e24;
+  --text-secondary: #535473;
+  --text-tertiary: #7d7e9b;
+  --text-dim: #a4a5ba;
+  --text-inverse: #ffffff;
+  --text-brand: #E08A12;
+  --text-amber: #E08A12;
+
+  /* Accent & Brand Colors */
+  --accent-primary: #E08A12;
+  --accent-hover: #c97705;
+  --accent-bubble: #E08A12;
+  --accent-subtle: rgba(224, 138, 18, 0.10);
+  --accent-glow: rgba(224, 138, 18, 0.20);
+
+  /* Status Indicators */
+  --status-ready: #059669;
+  --status-error: #dc2626;
+
+  /* Borders */
+  --border-subtle: rgba(27, 27, 58, 0.08);
+  --border-medium: rgba(27, 27, 58, 0.15);
+  --border-input: rgba(27, 27, 58, 0.12);
+  --border-focus: rgba(224, 138, 18, 0.45);
+
+  --citation-bg: rgba(224, 138, 18, 0.10);
+  --citation-text: #c27405;
+  --quote-border: #E08A12;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Custom Minimalist Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 170, 0.2);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 170, 0.4);
+}
+
+/* Fluid animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes slideUpFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideUpFadeOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.985);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up-fade {
+  animation: slideUpFadeIn 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up-exit {
+  animation: slideUpFadeOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float {
+  animation: floatSlow 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 5s ease-in-out infinite;
+}
+
+/* Brand glow utility */
+.brand-glow {
+  box-shadow: 0 0 30px var(--accent-glow);
+}
+
+/* Gradient text utility */
+.text-gradient-amber {
+  background: linear-gradient(135deg, #F2A33A 0%, #ffc06e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.light .text-gradient-amber {
+  background: linear-gradient(135deg, #E08A12 0%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
