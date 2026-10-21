@@ -1,6 +1,6 @@
 # Anuvaad AI — Local Setup & Installation Guide
 
-This guide provides step-by-step instructions to set up, configure, and run **Anuvaad AI** (DocuMind) locally on your workstation (Windows, macOS, or Linux).
+This guide provides step-by-step instructions to set up, configure, and run **Anuvaad AI** locally on your workstation (Windows, macOS, or Linux).
 
 ---
 
@@ -26,8 +26,8 @@ Ensure the following tools are installed on your machine:
 Clone the repository and inspect the folder structure:
 
 ```bash
-git clone https://github.com/Aayushh910/DocuMind-AI.git
-cd DocuMind-AI
+git clone https://github.com/Aayushh910/Anuvaad-AI.git
+cd Anuvaad-AI
 ```
 
 The workspace consists of two primary directories:
