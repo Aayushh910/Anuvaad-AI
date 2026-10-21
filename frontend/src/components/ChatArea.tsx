@@ -27,6 +27,8 @@ interface ChatAreaProps {
   onSelectDoc: (id: string) => void
   onSend: (question: string) => void
   onUpload: (file: File) => void
+  onReindex?: (id: string) => void
+  onRemoveDoc?: (id: string) => void
   onOpenSidebar: () => void
   onNewChat: () => void
   onNavigateLanding?: () => void
@@ -49,6 +51,8 @@ export default function ChatArea({
   onSelectDoc,
   onSend,
   onUpload,
+  onReindex,
+  onRemoveDoc,
   onOpenSidebar,
   onNewChat,
   onNavigateLanding,
@@ -341,6 +345,12 @@ export default function ChatArea({
               <DocumentProcessingCard
                 doc={processingDoc}
                 onStartChatting={() => onSelectDoc(processingDoc.id)}
+                onReindex={
+                  onReindex ? () => onReindex(processingDoc.id) : undefined
+                }
+                onDelete={
+                  onRemoveDoc ? () => onRemoveDoc(processingDoc.id) : undefined
+                }
               />
             </div>
           )}

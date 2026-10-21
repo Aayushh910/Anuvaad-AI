@@ -9,6 +9,9 @@ export interface UploadResponse {
   character_count: number
   image_count: number
   table_count: number
+  chunk_count?: number
+  indexed_chunks?: number
+  indexed_tables?: number
   images_metadata_file: string
   tables_metadata_file: string
   markdown_file: string
@@ -55,7 +58,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 export async function uploadDocument(
   file: File,
-  onProgress?: (pct: number) => void,
+  onProgress?: (pct: number, step?: 'uploading' | 'extracting') => void,
 ): Promise<UploadResponse> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
@@ -63,7 +66,14 @@ export async function uploadDocument(
 
     xhr.upload.addEventListener('progress', (e) => {
       if (e.lengthComputable && onProgress) {
-        onProgress(Math.round((e.loaded / e.total) * 100))
+        const pct = Math.round((e.loaded / e.total) * 100)
+        onProgress(pct, pct >= 100 ? 'extracting' : 'uploading')
+      }
+    })
+
+    xhr.upload.addEventListener('load', () => {
+      if (onProgress) {
+        onProgress(100, 'extracting')
       }
     })
 
@@ -81,8 +91,14 @@ export async function uploadDocument(
     })
 
     xhr.addEventListener('error', () => reject(new Error('Network error during upload')))
-    xhr.addEventListener('timeout', () => reject(new Error('Upload timed out')))
-    xhr.timeout = 120000
+    xhr.addEventListener('timeout', () =>
+      reject(
+        new Error(
+          'Document processing timed out (exceeded 10 minutes). Please try again.',
+        ),
+      ),
+    )
+    xhr.timeout = 600000 // 10 minutes (generous window for CPU docling extraction)
 
     const form = new FormData()
     form.append('file', file)
@@ -95,6 +111,34 @@ export async function indexDocument(documentId: string): Promise<IndexResponse> 
     method: 'POST',
   })
   return handleResponse<IndexResponse>(res)
+}
+
+export async function reindexDocument(
+  documentId: string,
+  fullReprocess: boolean = false,
+): Promise<IndexResponse> {
+  const res = await fetch(
+    `${BASE}/api/v1/documents/${documentId}/reindex?full_reprocess=${fullReprocess}`,
+    {
+      method: 'POST',
+    },
+  )
+  return handleResponse<IndexResponse>(res)
+}
+
+export interface DeleteDocumentResponse {
+  status: string
+  document_id: string
+  message: string
+}
+
+export async function deleteDocument(
+  documentId: string,
+): Promise<DeleteDocumentResponse> {
+  const res = await fetch(`${BASE}/api/v1/documents/${documentId}`, {
+    method: 'DELETE',
+  })
+  return handleResponse<DeleteDocumentResponse>(res)
 }
 
 export async function askQuestion(

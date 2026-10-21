@@ -21,7 +21,7 @@ export default function App() {
   const [pendingQuery, setPendingQuery] = useState<string | undefined>()
   const [isTransitioning, setIsTransitioning] = useState(false)
 
-  const { documents, activeDocId, setActiveDocId, upload, removeDocument } =
+  const { documents, activeDocId, setActiveDocId, upload, removeDocument, reindexDoc } =
     useDocuments()
   const { messages, loading, sendMessage, clearMessages } = useChat()
 
@@ -117,6 +117,7 @@ export default function App() {
           onSelect={handleSelectDocument}
           onUpload={upload}
           onRemove={removeDocument}
+          onReindex={reindexDoc}
           onClose={() => setSidebarOpen(false)}
           onNewChat={handleNewChat}
           onNavigateLanding={() => navigate('/')}
@@ -142,6 +143,8 @@ export default function App() {
           onSelectDoc={handleSelectDocument}
           onSend={handleSendMessage}
           onUpload={upload}
+          onReindex={reindexDoc}
+          onRemoveDoc={removeDocument}
           onOpenSidebar={() => setSidebarOpen(true)}
           onNewChat={handleNewChat}
           onNavigateLanding={() => navigate('/')}

@@ -1,5 +1,11 @@
 import { useState, useCallback, useEffect } from 'react'
-import { uploadDocument, indexDocument, listDocuments } from '../services/api'
+import {
+  uploadDocument,
+  indexDocument,
+  reindexDocument,
+  deleteDocument,
+  listDocuments,
+} from '../services/api'
 import type { Document } from '../types'
 
 export function useDocuments() {
@@ -65,18 +71,24 @@ export function useDocuments() {
       setDocuments((prev) => [placeholder, ...prev])
 
       try {
-        // Step 1: Upload with progress
-        const up = await uploadDocument(file, (pct) => {
+        // Step 1: Upload with live network and extraction progress
+        const up = await uploadDocument(file, (pct, currentStep) => {
           setDocuments((prev) =>
-            prev.map((d) =>
-              d.id === tempId ? ({ ...d, uploadProgress: pct } as Document & { uploadProgress: number }) : d,
-            ),
+            prev.map((d) => {
+              if (d.id !== tempId) return d
+              const step = currentStep ?? (pct >= 100 ? 'extracting' : 'uploading')
+              return {
+                ...d,
+                step,
+                uploadProgress: pct,
+              } as Document
+            }),
           )
         })
 
         const docId = up.document_id
 
-        // Step 2: Update with extracted data
+        // Step 2: Show extraction complete, transition to chunking
         const doc: Document = {
           id: docId,
           filename: up.filename,
@@ -85,6 +97,9 @@ export function useDocuments() {
           characterCount: up.character_count,
           imageCount: up.image_count,
           tableCount: up.table_count,
+          chunkCount: up.chunk_count,
+          indexedChunks: up.indexed_chunks,
+          indexedTables: up.indexed_tables,
           processedAt: new Date().toISOString(),
           step: 'chunking',
         }
@@ -95,20 +110,34 @@ export function useDocuments() {
           onUploaded(docId)
         }
 
-        // Step 3: Index
+        // Step 3: Transition to indexing with smooth visual synchronization
+        await new Promise((r) => setTimeout(r, 450))
         updateDoc(docId, { step: 'indexing' })
-        const idx = await indexDocument(docId)
 
+        let chunkCount = up.chunk_count
+        let indexedChunks = up.indexed_chunks
+        let indexedTables = up.indexed_tables
+
+        if (!chunkCount || !indexedChunks) {
+          const idx = await indexDocument(docId)
+          chunkCount = idx.chunk_count
+          indexedChunks = idx.indexed_chunks
+          indexedTables = idx.indexed_tables
+        } else {
+          await new Promise((r) => setTimeout(r, 350))
+        }
+
+        // Step 4: Fully Ready!
         updateDoc(docId, {
           step: 'ready',
-          chunkCount: idx.chunk_count,
-          indexedChunks: idx.indexed_chunks,
-          indexedTables: idx.indexed_tables,
+          chunkCount,
+          indexedChunks,
+          indexedTables,
         })
 
         return docId
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Unknown error'
+        const msg = err instanceof Error ? err.message : 'Upload failed'
         setDocuments((prev) =>
           prev.map((d) =>
             d.id === tempId || d.step !== 'ready'
@@ -122,13 +151,70 @@ export function useDocuments() {
     [updateDoc],
   )
 
-  const removeDocument = useCallback(
-    (id: string) => {
-      setDocuments((prev) => prev.filter((d) => d.id !== id))
-      if (activeDocId === id) setActiveDocId(null)
+  const deleteDoc = useCallback(
+    async (id: string): Promise<boolean> => {
+      // If it's a temporary uploading document, just remove from state
+      if (id.startsWith('tmp-')) {
+        setDocuments((prev) => prev.filter((d) => d.id !== id))
+        if (activeDocId === id) setActiveDocId(null)
+        return true
+      }
+
+      updateDoc(id, { isDeleting: true })
+
+      try {
+        await deleteDocument(id)
+        setDocuments((prev) => prev.filter((d) => d.id !== id))
+        setActiveDocId((current) => {
+          if (current === id) {
+            const remaining = documents.filter((d) => d.id !== id)
+            return remaining.length > 0 ? remaining[0].id : null
+          }
+          return current
+        })
+        return true
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Failed to delete document'
+        updateDoc(id, { isDeleting: false, error: msg })
+        throw err
+      }
     },
-    [activeDocId],
+    [activeDocId, documents, updateDoc],
   )
 
-  return { documents, activeDocId, setActiveDocId, upload, removeDocument }
+  const reindexDoc = useCallback(
+    async (id: string, fullReprocess: boolean = false): Promise<boolean> => {
+      updateDoc(id, { step: 'chunking', isReindexing: true, error: undefined })
+
+      try {
+        const idx = await reindexDocument(id, fullReprocess)
+
+        updateDoc(id, {
+          step: 'ready',
+          isReindexing: false,
+          chunkCount: idx.chunk_count,
+          indexedChunks: idx.indexed_chunks,
+          indexedTables: idx.indexed_tables,
+          processedAt: new Date().toISOString(),
+          error: undefined,
+        })
+        return true
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Reindexing failed'
+        updateDoc(id, { step: 'error', isReindexing: false, error: msg })
+        throw err
+      }
+    },
+    [updateDoc],
+  )
+
+  return {
+    documents,
+    activeDocId,
+    setActiveDocId,
+    upload,
+    removeDocument: deleteDoc,
+    deleteDoc,
+    reindexDoc,
+  }
 }

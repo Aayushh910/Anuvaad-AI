@@ -99,6 +99,27 @@ def index_document(document_id: str) -> dict:
     }
 
 
+def delete_document_vectors(document_id: str) -> None:
+    """Delete all vector points belonging to a specific document."""
+    if not client.collection_exists(COLLECTION_NAME):
+        return
+
+    client.delete(
+        collection_name=COLLECTION_NAME,
+        points_selector=models.FilterSelector(
+            filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="document_id",
+                        match=MatchValue(value=document_id),
+                    )
+                ]
+            )
+        ),
+        wait=True,
+    )
+
+
 def search_documents(
     query: str,
     limit: int = 5,

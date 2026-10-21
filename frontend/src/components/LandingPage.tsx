@@ -95,7 +95,21 @@ export default function LandingPage({
       setUploadStatus('Uploading your PDF...')
       hasNavigatedRef.current = false
 
+      const statusTimer1 = setTimeout(() => {
+        if (!hasNavigatedRef.current) {
+          setUploadStatus('Extracting document layout, text & embedded tables...')
+        }
+      }, 1800)
+
+      const statusTimer2 = setTimeout(() => {
+        if (!hasNavigatedRef.current) {
+          setUploadStatus('Generating page-aware chunks & indexing...')
+        }
+      }, 15000)
+
       const triggerNavigation = () => {
+        clearTimeout(statusTimer1)
+        clearTimeout(statusTimer2)
         if (!hasNavigatedRef.current) {
           hasNavigatedRef.current = true
           setUploadStatus('Redirecting to Chat...')
@@ -113,6 +127,8 @@ export default function LandingPage({
         })
         triggerNavigation()
       } catch (err) {
+        clearTimeout(statusTimer1)
+        clearTimeout(statusTimer2)
         setIsUploading(false)
         setCurrentFile(null)
         setErrorMessage(
