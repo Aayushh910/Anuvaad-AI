@@ -1,8 +1,11 @@
+import { useState } from 'react'
 import {
   FileText,
   Loader2,
   AlertCircle,
   Trash2,
+  RefreshCw,
+  Check,
   Layers,
   Table,
   Image as ImageIcon,
@@ -20,6 +23,7 @@ interface SidebarProps {
   onSelect: (id: string) => void
   onUpload: (file: File) => void
   onRemove: (id: string) => void
+  onReindex?: (id: string, fullReprocess?: boolean) => void
   onClose?: () => void
   onNewChat?: () => void
   onNavigateLanding?: () => void
@@ -56,13 +60,18 @@ interface DocCardProps {
   doc: Document
   isActive: boolean
   onSelect: () => void
-  onRemove: () => void
+  onRemove: () => void | Promise<any>
+  onReindex?: () => void | Promise<any>
 }
 
-function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
+function DocumentCard({ doc, isActive, onSelect, onRemove, onReindex }: DocCardProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [isDeletingLocal, setIsDeletingLocal] = useState(false)
+  const [isReindexingLocal, setIsReindexingLocal] = useState(false)
+
   const isReady = doc.step === 'ready'
   const isError = doc.step === 'error'
-  const isProcessing = !isReady && !isError
+  const isProcessing = (!isReady && !isError) || doc.isReindexing || isReindexingLocal
   const progressPercent = getStepProgress(doc.step)
 
   return (
@@ -117,19 +126,111 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
               {doc.filename}
             </p>
 
-            {/* Remove Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onRemove()
-              }}
-              className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity cursor-pointer hover:text-red-500"
-              style={{ color: 'var(--text-dim)' }}
-              title="Remove document"
-              aria-label="Remove document"
-            >
-              <Trash2 size={12} />
-            </button>
+            {confirmDelete ? (
+              <div
+                className="flex items-center gap-1 shrink-0 px-1.5 py-0.5 rounded-md border text-[10px] animate-fade-in"
+                style={{
+                  backgroundColor: 'var(--bg-surface-elevated)',
+                  borderColor: 'rgba(239, 68, 68, 0.4)',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="text-red-500 font-semibold">Delete?</span>
+                <button
+                  type="button"
+                  onClick={async (e) => {
+                    e.stopPropagation()
+                    setIsDeletingLocal(true)
+                    try {
+                      await onRemove()
+                    } catch {
+                      setIsDeletingLocal(false)
+                      setConfirmDelete(false)
+                    }
+                  }}
+                  disabled={isDeletingLocal}
+                  className="p-0.5 rounded hover:bg-red-500/20 text-red-500 transition-colors cursor-pointer"
+                  title="Confirm delete"
+                  aria-label="Confirm delete"
+                >
+                  {isDeletingLocal ? (
+                    <Loader2 size={11} className="animate-spin text-red-500" />
+                  ) : (
+                    <Check size={11} />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setConfirmDelete(false)
+                  }}
+                  disabled={isDeletingLocal}
+                  className="p-0.5 rounded hover:bg-[var(--bg-hover)] text-[var(--text-dim)] transition-colors cursor-pointer"
+                  title="Cancel"
+                  aria-label="Cancel"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-0.5 shrink-0">
+                {/* Re-index Button */}
+                {onReindex && (
+                  <button
+                    type="button"
+                    onClick={async (e) => {
+                      e.stopPropagation()
+                      setIsReindexingLocal(true)
+                      try {
+                        await onReindex()
+                      } finally {
+                        setIsReindexingLocal(false)
+                      }
+                    }}
+                    disabled={
+                      isProcessing ||
+                      doc.isReindexing ||
+                      isReindexingLocal ||
+                      doc.isDeleting
+                    }
+                    className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity cursor-pointer hover:text-[var(--text-brand)] disabled:opacity-50"
+                    style={{ color: 'var(--text-dim)' }}
+                    title="Re-index document"
+                    aria-label="Re-index document"
+                  >
+                    <RefreshCw
+                      size={12}
+                      className={
+                        doc.isReindexing || isReindexingLocal
+                          ? 'animate-spin text-[var(--text-brand)]'
+                          : ''
+                      }
+                    />
+                  </button>
+                )}
+
+                {/* Remove Button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setConfirmDelete(true)
+                  }}
+                  disabled={doc.isDeleting || isDeletingLocal}
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity cursor-pointer hover:text-red-500 disabled:opacity-50"
+                  style={{ color: 'var(--text-dim)' }}
+                  title="Delete document"
+                  aria-label="Delete document"
+                >
+                  {doc.isDeleting || isDeletingLocal ? (
+                    <Loader2 size={12} className="animate-spin text-red-500" />
+                  ) : (
+                    <Trash2 size={12} />
+                  )}
+                </button>
+              </div>
+            )}
           </div>
 
           <div
@@ -244,9 +345,24 @@ function DocumentCard({ doc, isActive, onSelect, onRemove }: DocCardProps) {
 
       {/* Error state */}
       {isError && (
-        <div className="mt-2 flex items-start gap-1 text-[11px] text-red-500 bg-red-500/10 p-2 rounded-lg">
-          <AlertCircle size={13} className="shrink-0 mt-0.5" />
-          <span className="truncate">{doc.error || 'Processing failed'}</span>
+        <div className="mt-2 flex items-center justify-between gap-1 text-[11px] text-red-500 bg-red-500/10 p-2 rounded-lg">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <AlertCircle size={13} className="shrink-0" />
+            <span className="truncate">{doc.error || 'Processing failed'}</span>
+          </div>
+          {onReindex && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onReindex()
+              }}
+              className="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-500/20 hover:bg-red-500/30 text-red-500 cursor-pointer shrink-0 transition-colors"
+              title="Retry re-indexing"
+            >
+              Retry
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -259,6 +375,7 @@ export default function Sidebar({
   onSelect,
   onUpload,
   onRemove,
+  onReindex,
   onClose,
   onNewChat,
   onNavigateLanding,
@@ -418,6 +535,7 @@ export default function Sidebar({
               isActive={doc.id === activeDocId}
               onSelect={() => onSelect(doc.id)}
               onRemove={() => onRemove(doc.id)}
+              onReindex={onReindex ? () => onReindex(doc.id) : undefined}
             />
           ))
         )}

@@ -20,6 +20,8 @@ export interface Document {
   indexedChunks?: number
   indexedTables?: number
   error?: string
+  isReindexing?: boolean
+  isDeleting?: boolean
 }
 
 export interface Source {
