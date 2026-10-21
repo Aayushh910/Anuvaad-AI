@@ -206,6 +206,4 @@ Follow this quick sanity check to verify the full workflow:
 ## 7. Documentation Navigation
 
 - 🏠 **[README.md](README.md)**: Master project overview, features, and architecture.
-- 📘 **[docs/workflow.md](docs/workflow.md)**: End-to-end data lifecycle and sequence interactions.
-- 🏗️ **[docs/architecture.md](docs/architecture.md)**: Deep system architecture and service layers.
-- 🔬 **[docs/pipeline.md](docs/pipeline.md)**: Detailed RAG pipeline and evaluation matrix.
+- 📘 **[docs/workflow.md](docs/workflow.md)**: Unified technical specification (Architecture, Multimodal RAG Pipeline, and End-to-End Workflow).

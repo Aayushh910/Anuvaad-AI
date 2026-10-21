@@ -1,15 +1,15 @@
-# 🧠 Anuvaad AI — Intelligent Multimodal Document Intelligence & RAG Platform
-
 <p align="center">
-  <img src="frontend/src/assets/logo.svg" alt="Anuvaad AI Logo" width="110" height="110" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="frontend/src/assets/logo-horizontal-dark-theme.svg">
+    <source media="(prefers-color-scheme: light)" srcset="frontend/src/assets/logo-horizontal-light-theme.svg">
+    <img src="frontend/src/assets/logo-horizontal-dark-theme.svg" alt="Anuvaad AI Logo" width="460" />
+  </picture>
 </p>
-
+  
 <p align="center">
   <b>Transform complex, messy PDFs into structured, queryable knowledge.</b><br>
   Preserving layout hierarchies, structured tables, and visual diagrams with verifiable page citations.
-</p>
-
-<p align="center">
+  <br><br>
   <img src="https://img.shields.io/badge/React-19.2-61DAFB?logo=react&logoColor=black" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Vite-8.3-646CFF?logo=vite&logoColor=white" alt="Vite" />
@@ -52,55 +52,78 @@ Traditional Retrieval-Augmented Generation (RAG) pipelines treat PDFs as **flat,
 
 ## 2. System Architecture
 
+```
++-----------------------------------------------------------------------------------------+
+|                               CLIENT LAYER (React 19 + Vite)                            |
+|  [ Landing Page & Dropzone ]  [ Document Sidebar ]  [ Stage Visualizer ]  [ Chat Area ]  |
++--------------------------------------------+--------------------------------------------+
+                                             | HTTP / REST
+                                             v
++-----------------------------------------------------------------------------------------+
+|                             API GATEWAY LAYER (FastAPI)                                 |
+|         POST /upload           GET /documents          POST /reindex         POST /ask  |
+|                                                                                         |
+|       [ Document Ingestion Controller ]                 [ Query & QA Controller ]       |
+|            |                        |                                |                  |
+|            v                        v                                v                  |
+|   (Docling Converter)     (FastAPI BackgroundTasks)        (Grounded Answer Engine)     |
+|   - Layout Markdown         - Async Groq Vision              - Cosine Top-K Chunks      |
+|   - 2D Structured Tables      Image Enrichment               - Strict Page Citations    |
+|   - Page Text Mapping                                        - Insufficient Evidence    |
+|   - PyMuPDF Figures                                            Refusal Guardrails       |
++------------+------------------------+--------------------------------+------------------+
+             |                        |                                |
+             v                        v                                v
++----------------------------+  +----------------------------+  +-------------------------+
+|      LOCAL STORAGE         |  |   EXTERNAL ACCELERATION    |  |     QDRANT VECTOR DB    |
+| storage/uploads/*.pdf      |  | Groq Llama 3.3 70B (Text)  |  | Collection: pdf_chunks  |
+| storage/processed/*.md     |  | Groq Qwen 3.6 27B (Vision) |  | 384-dim all-MiniLM-L6   |
+| storage/chunks/*.json      |  | (>250 tokens/sec speed)    |  | Filter: document_id     |
++----------------------------+  +----------------------------+  +-------------------------+
+```
+
 ```mermaid
-graph TB
-    subgraph Frontend_Client ["Frontend (React 19 + TypeScript + Vite)"]
-        Landing["Landing Page\n(Hero & Dropzone)"]
-        Sidebar["Document Sidebar\n(Delete & Re-index)"]
-        Chat["Chat Workspace\n(Streaming & Citation Pills)"]
-        StageCard["Stage Visualizer\n(Uploading ➔ Extracting ➔ Chunking ➔ Indexing)"]
+flowchart TD
+    subgraph Client ["Client Layer (React 19 + TypeScript + Vite)"]
+        Landing["Landing Page"]
+        Sidebar["Document Sidebar"]
+        Chat["Chat Workspace"]
+        StageCard["Stage Visualizer"]
     end
 
-    subgraph Backend_Gateway ["API Layer (FastAPI + Uvicorn)"]
-        API["FastAPI REST Server"]
-        BG["FastAPI BackgroundTasks\n(Async Vision Worker)"]
+    subgraph Backend ["API Layer (FastAPI + Uvicorn)"]
+        API["FastAPI REST Endpoints"]
+        Docling["Docling Document Converter"]
+        TableExt["Table Extraction Grid"]
+        ImgExt["PyMuPDF Image Extractor"]
+        Chunker["Page-Aware Recursive Chunker"]
+        BG["FastAPI BackgroundTasks"]
     end
 
-    subgraph Ingestion_Engine ["Multimodal Engine"]
-        Docling["Docling Document Converter\n(Layout & Hierarchy)"]
-        TableExt["Table Extraction\n(Grid to 2D JSON)"]
-        ImgExt["Image Extraction (PyMuPDF)\n(Dimension & Quality Filter)"]
-        Chunker["Page-Aware Chunker\n(RecursiveCharacterSplitter)"]
+    subgraph Storage ["Persistent Local Storage"]
+        DiskStore[("Raw PDFs & Extracted Artifacts")]
+        QdrantStore[("Qdrant Vector Database")]
     end
 
-    subgraph Storage_Layer ["Persistence Layer"]
-        Disk[("storage/uploads/ & processed/\n(PDFs, Markdown, Images, Chunks)")]
-        Qdrant[("storage/qdrant/\n(Embedded Vector Database)")]
+    subgraph AICloud ["Groq Cloud LPU"]
+        Groq_LLM["Groq Llama 3.3 70B (Text QA)"]
+        Groq_Vision["Groq Qwen 3.6 27B (Vision)"]
     end
 
-    subgraph AI_Cloud ["Acceleration Layer (Groq Cloud LPU)"]
-        Groq_LLM["Groq Llama 3.3 70B\n(High-speed Text Reasoning)"]
-        Groq_Vision["Groq Qwen 3.6 27B\n(Visual Chart Analysis)"]
-    end
-
-    Landing --> API
-    Sidebar --> API
-    Chat --> API
-    StageCard --> API
-
+    Client -->|HTTP / JSON| API
     API --> Docling
     API --> TableExt
     API --> ImgExt
     API --> Chunker
     API --> BG
 
-    Chunker --> Qdrant
-    Docling --> Disk
-    TableExt --> Disk
-    ImgExt --> Disk
+    Chunker --> QdrantStore
+    Docling --> DiskStore
+    TableExt --> DiskStore
+    ImgExt --> DiskStore
 
-    BG -.->|Async Vision Descriptions| Groq_Vision
-    API -->|Cosine Search & Payload Filter| Qdrant
+    BG -.->|Async Figure Captions| Groq_Vision
+    API -->|Cosine Search & Payload Filter| QdrantStore
     API -->|Grounded Context & Prompt| Groq_LLM
 ```
 
@@ -178,7 +201,7 @@ Built with modern design best practices: subtle micro-animations, animated progr
        └── Llama 3.3 70B with strict citation guardrails [Source: Page X]
 ```
 
-> For deep architectural explanations and alternatives evaluated (Docling vs PyPDF, Qdrant vs Chroma, Groq vs Local Ollama), see [docs/pipeline.md](docs/pipeline.md).
+> For deep architectural explanations and alternatives evaluated (Docling vs PyPDF, Qdrant vs Chroma, Groq vs Local Ollama), see [docs/workflow.md](docs/workflow.md).
 
 ---
 
@@ -230,10 +253,8 @@ Explore the dedicated documentation:
 
 | Documentation File | Description |
 |---|---|
-| 📘 **[docs/workflow.md](docs/workflow.md)** | End-to-end data flow with detailed sequence and flowchart diagrams. |
-| 🏗️ **[docs/architecture.md](docs/architecture.md)** | Full system architecture, layer responsibilities, and storage directory layout. |
-| 🔬 **[docs/pipeline.md](docs/pipeline.md)** | Complete RAG pipeline deep dive: what, why, and alternatives evaluated. |
-| 🚀 **[setup.md](setup.md)** | Step-by-step local setup, environment configuration, and troubleshooting guide. |
+| 📘 **[docs/workflow.md](docs/workflow.md)** | **Unified Technical Specification**: System Architecture, Multimodal RAG Pipeline, End-to-End Data Lifecycle, and Decision Matrices. |
+| 🚀 **[setup.md](setup.md)** | **Local Setup & Troubleshooting Guide**: Step-by-step installation, environment configuration, and verification checklists. |
 
 ---
 
