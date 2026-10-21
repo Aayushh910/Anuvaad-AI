@@ -163,6 +163,27 @@ def generate_answer(
         document_id=document_id,
     )
 
+    # Self-healing fallback: If a document was uploaded but not indexed into Qdrant,
+    # automatically generate chunks and index it so search succeeds.
+    if document_id and not results:
+        chunks_file = BASE_DIR / "storage" / "chunks" / f"{document_id}.json"
+        pages_file = BASE_DIR / "storage" / "processed" / f"{document_id}.pages.json"
+        if not chunks_file.exists() and pages_file.exists():
+            try:
+                from app.services.chunking import chunk_document
+                from app.services.vector_store import index_document_with_tables
+
+                chunk_document(document_id)
+                index_document_with_tables(document_id)
+
+                results = search_documents(
+                    query=question,
+                    limit=limit,
+                    document_id=document_id,
+                )
+            except Exception as exc:
+                print(f"Warning: Auto-indexing on search failed for {document_id}: {exc}")
+
     if not results and not document_id:
         return {
             "answer": "I couldn't find relevant information in the indexed documents.",

@@ -5,12 +5,16 @@ import {
   ChevronUp,
   CheckCircle,
   Loader2,
+  RefreshCw,
+  Trash2,
 } from 'lucide-react'
 import type { Document } from '../types'
 
 interface DocumentProcessingCardProps {
   doc: Document
   onStartChatting?: () => void
+  onReindex?: () => void
+  onDelete?: () => void
 }
 
 function formatBytes(bytes: number): string {
@@ -23,6 +27,8 @@ function formatBytes(bytes: number): string {
 export default function DocumentProcessingCard({
   doc,
   onStartChatting,
+  onReindex,
+  onDelete,
 }: DocumentProcessingCardProps) {
   const [expanded, setExpanded] = useState(true)
   const [seconds, setSeconds] = useState(1)
@@ -42,18 +48,22 @@ export default function DocumentProcessingCard({
     {
       title: 'Streaming PDF to local storage',
       done: doc.step !== 'uploading',
+      active: doc.step === 'uploading',
     },
     {
       title: 'Extracting document layout, text & embedded tables',
       done: doc.step === 'chunking' || doc.step === 'indexing' || isReady,
+      active: doc.step === 'extracting',
     },
     {
       title: 'Generating page-aware text chunks',
       done: doc.step === 'indexing' || isReady,
+      active: doc.step === 'chunking',
     },
     {
       title: 'Indexing vector embeddings into Qdrant store',
       done: isReady,
+      active: doc.step === 'indexing',
     },
   ]
 
@@ -98,7 +108,7 @@ export default function DocumentProcessingCard({
         </div>
       </div>
 
-      {/* Expanded Accordion (Image 2 style) */}
+      {/* Expanded Accordion */}
       {expanded && (
         <div className="mt-3 space-y-3 animate-fade-in">
           <div
@@ -114,23 +124,49 @@ export default function DocumentProcessingCard({
                 className="px-3.5 py-2.5 flex items-center justify-between transition-colors"
                 style={{
                   borderColor: 'var(--border-subtle)',
-                  color: step.done ? 'var(--text-secondary)' : 'var(--text-tertiary)',
+                  color: step.done
+                    ? 'var(--text-secondary)'
+                    : step.active
+                    ? 'var(--text-brand)'
+                    : 'var(--text-tertiary)',
                 }}
               >
                 <div className="flex items-center gap-2">
                   {step.done ? (
-                    <CheckCircle size={13} className="text-emerald-500 shrink-0" />
-                  ) : (
+                    <CheckCircle
+                      size={13}
+                      className="text-emerald-500 shrink-0"
+                    />
+                  ) : step.active ? (
                     <Loader2
                       size={13}
                       className="animate-spin text-[var(--text-brand)] shrink-0"
                     />
+                  ) : (
+                    <span
+                      className="h-3 w-3 rounded-full border shrink-0 opacity-40"
+                      style={{ borderColor: 'var(--text-tertiary)' }}
+                    />
                   )}
-                  <span>{step.title}</span>
+                  <span className={step.active ? 'font-medium' : ''}>
+                    {step.title}
+                  </span>
                 </div>
 
-                <span className="text-[10px] text-[var(--text-dim)]">
-                  {step.done ? 'Done' : 'Running...'}
+                <span
+                  className={`text-[10px] ${
+                    step.done
+                      ? 'text-emerald-500 font-medium'
+                      : step.active
+                      ? 'text-[var(--text-brand)] font-semibold'
+                      : 'text-[var(--text-dim)]'
+                  }`}
+                >
+                  {step.done
+                    ? 'Done'
+                    : step.active
+                    ? 'Processing...'
+                    : 'Pending'}
                 </span>
               </div>
             ))}
@@ -173,18 +209,68 @@ export default function DocumentProcessingCard({
               </div>
             </div>
 
-            {isReady && onStartChatting && (
-              <button
-                onClick={onStartChatting}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer hover:opacity-90"
-                style={{
-                  backgroundColor: 'var(--accent-primary)',
-                  color: 'var(--text-inverse)',
-                }}
-              >
-                Chat Now
-              </button>
-            )}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {onReindex && (
+                <button
+                  type="button"
+                  onClick={onReindex}
+                  disabled={doc.isReindexing || doc.isDeleting}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer hover:bg-[var(--bg-hover)] disabled:opacity-50"
+                  style={{
+                    backgroundColor: 'var(--bg-surface-elevated)',
+                    borderColor: 'var(--border-subtle)',
+                    color: 'var(--text-secondary)',
+                  }}
+                  title="Re-index document"
+                >
+                  <RefreshCw
+                    size={11}
+                    className={
+                      doc.isReindexing
+                        ? 'animate-spin text-[var(--text-brand)]'
+                        : ''
+                    }
+                  />
+                  <span>{isError ? 'Retry' : 'Re-index'}</span>
+                </button>
+              )}
+
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  disabled={doc.isDeleting}
+                  className="flex items-center gap-1 p-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer hover:text-red-500 hover:border-red-500/30 disabled:opacity-50"
+                  style={{
+                    backgroundColor: 'var(--bg-surface-elevated)',
+                    borderColor: 'var(--border-subtle)',
+                    color: 'var(--text-dim)',
+                  }}
+                  title="Delete document"
+                  aria-label="Delete document"
+                >
+                  {doc.isDeleting ? (
+                    <Loader2 size={12} className="animate-spin text-red-500" />
+                  ) : (
+                    <Trash2 size={12} />
+                  )}
+                </button>
+              )}
+
+              {isReady && onStartChatting && (
+                <button
+                  type="button"
+                  onClick={onStartChatting}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer hover:opacity-90 shadow-2xs"
+                  style={{
+                    backgroundColor: 'var(--accent-primary)',
+                    color: 'var(--text-inverse)',
+                  }}
+                >
+                  Chat Now
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
