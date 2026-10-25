@@ -52,36 +52,6 @@ Traditional Retrieval-Augmented Generation (RAG) pipelines treat PDFs as **flat,
 
 ## 2. System Architecture
 
-```
-+-----------------------------------------------------------------------------------------+
-|                               CLIENT LAYER (React 19 + Vite)                            |
-|  [ Landing Page & Dropzone ]  [ Document Sidebar ]  [ Stage Visualizer ]  [ Chat Area ]  |
-+--------------------------------------------+--------------------------------------------+
-                                             | HTTP / REST
-                                             v
-+-----------------------------------------------------------------------------------------+
-|                             API GATEWAY LAYER (FastAPI)                                 |
-|         POST /upload           GET /documents          POST /reindex         POST /ask  |
-|                                                                                         |
-|       [ Document Ingestion Controller ]                 [ Query & QA Controller ]       |
-|            |                        |                                |                  |
-|            v                        v                                v                  |
-|   (Docling Converter)     (FastAPI BackgroundTasks)        (Grounded Answer Engine)     |
-|   - Layout Markdown         - Async Groq Vision              - Cosine Top-K Chunks      |
-|   - 2D Structured Tables      Image Enrichment               - Strict Page Citations    |
-|   - Page Text Mapping                                        - Insufficient Evidence    |
-|   - PyMuPDF Figures                                            Refusal Guardrails       |
-+------------+------------------------+--------------------------------+------------------+
-             |                        |                                |
-             v                        v                                v
-+----------------------------+  +----------------------------+  +-------------------------+
-|      LOCAL STORAGE         |  |   EXTERNAL ACCELERATION    |  |     QDRANT VECTOR DB    |
-| storage/uploads/*.pdf      |  | Groq Llama 3.3 70B (Text)  |  | Collection: pdf_chunks  |
-| storage/processed/*.md     |  | Groq Qwen 3.6 27B (Vision) |  | 384-dim all-MiniLM-L6   |
-| storage/chunks/*.json      |  | (>250 tokens/sec speed)    |  | Filter: document_id     |
-+----------------------------+  +----------------------------+  +-------------------------+
-```
-
 ```mermaid
 flowchart TD
     subgraph Client ["Client Layer (React 19 + TypeScript + Vite)"]
