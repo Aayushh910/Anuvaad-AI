@@ -27,10 +27,12 @@ export interface Document {
 export interface Source {
   source: string
   document_id: string | null
+  filename?: string | null
   chunk_id: string | null
   chunk_index: number | null
   score: number | null
-  page: number | null
+  page: number | string | null
+  page_or_slide_or_sheet?: number | string | null
   content_type: string
   text: string
   image_filename?: string
@@ -48,11 +50,11 @@ export interface Message {
 
 export const STEP_LABELS: Record<ProcessingStep, string> = {
   uploading: 'Uploading',
-  extracting: 'Extracting Content',
-  chunking: 'Creating Chunks',
-  indexing: 'Indexing',
+  extracting: 'Extracting content',
+  chunking: 'Creating chunks',
+  indexing: 'Indexing vectors',
   ready: 'Ready',
-  error: 'Error',
+  error: 'Processing failed',
 }
 
 export const STEP_ORDER: ProcessingStep[] = [
