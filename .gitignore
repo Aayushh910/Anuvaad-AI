@@ -1,4 +1,3 @@
-
 # Python
 __pycache__/
 *.py[cod]
@@ -15,6 +14,7 @@ venv/
 .env
 .env.*
 !.env.example
+eval
 
 # Generated document data and local vector database
 backend/storage/

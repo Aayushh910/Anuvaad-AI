@@ -1,29 +1,27 @@
-import { useRef, useState, useCallback } from 'react'
-import { UploadCloud, FileText, AlertCircle } from 'lucide-react'
+import { useState, useRef, useCallback } from 'react'
+import { UploadCloud, AlertCircle } from 'lucide-react'
 
 interface UploadZoneProps {
   onUpload: (file: File) => void
   disabled?: boolean
 }
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024 // 25 MB
+const MAX_SIZE_BYTES = 25 * 1024 * 1024 // 25 MB
 
-export default function UploadZone({ onUpload, disabled }: UploadZoneProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
+export default function UploadZone({
+  onUpload,
+  disabled = false,
+}: UploadZoneProps) {
   const [dragging, setDragging] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const validateAndUpload = useCallback(
     (file: File) => {
       setErrorMessage(null)
 
-      if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
-        setErrorMessage('Unsupported file. Please select a PDF document.')
-        return
-      }
-
-      if (file.size > MAX_FILE_SIZE) {
-        setErrorMessage('File exceeds the 25 MB size limit.')
+      if (file.size > MAX_SIZE_BYTES) {
+        setErrorMessage('File exceeds the 25 MB limit.')
         return
       }
 
@@ -74,39 +72,35 @@ export default function UploadZone({ onUpload, disabled }: UploadZoneProps) {
             ? 'var(--accent-primary)'
             : 'var(--border-medium)',
         }}
-        role="button"
-        tabIndex={disabled ? -1 : 0}
       >
         <div
-          className="flex h-8 w-8 items-center justify-center rounded-lg mb-2 transition-transform duration-200 group-hover:scale-105"
+          className="flex h-8 w-8 items-center justify-center rounded-lg transition-transform group-hover:scale-105 mb-1.5"
           style={{
-            backgroundColor: dragging
-              ? 'var(--accent-primary)'
-              : 'var(--bg-surface-elevated)',
-            color: dragging ? 'var(--text-inverse)' : 'var(--text-brand)',
+            backgroundColor: 'var(--accent-subtle)',
+            color: 'var(--text-brand)',
           }}
         >
-          {dragging ? <FileText size={16} /> : <UploadCloud size={16} />}
+          <UploadCloud size={16} />
         </div>
 
         <p
-          className="text-xs font-semibold text-center mb-0.5"
+          className="text-xs font-medium text-center mb-0.5"
           style={{ color: 'var(--text-primary)' }}
         >
-          {dragging ? 'Drop PDF here' : 'Upload a document to begin.'}
+          {dragging ? 'Drop document here' : 'Upload a document to begin.'}
         </p>
 
         <p
           className="text-[11px] text-center"
           style={{ color: 'var(--text-tertiary)' }}
         >
-          Drag & drop or browse · Up to 25 MB
+          PDF, Office, Sheets, Text, Images · Up to 25 MB
         </p>
 
         <input
           ref={inputRef}
           type="file"
-          accept=".pdf,application/pdf"
+          accept=".pdf,.docx,.pptx,.xlsx,.xls,.csv,.txt,.md,.html,.png,.jpg,.jpeg,.webp"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0]

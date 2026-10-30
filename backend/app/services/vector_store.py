@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from uuid import uuid5, NAMESPACE_URL
 
@@ -8,10 +9,10 @@ from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 CHUNKS_DIR = BASE_DIR / "storage" / "chunks"
-QDRANT_DIR = BASE_DIR / "storage" / "qdrant"
+QDRANT_DIR = Path(os.getenv("QDRANT_PATH", str(BASE_DIR / "storage" / "qdrant")))
 
-COLLECTION_NAME = "pdf_chunks"
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "pdf_chunks")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 
 QDRANT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -45,7 +46,7 @@ def index_document(document_id: str) -> dict:
     embeddings = model.encode(
         texts,
         normalize_embeddings=True,
-        show_progress_bar=True,
+        show_progress_bar=False,
     )
 
     points = []
@@ -122,13 +123,16 @@ def delete_document_vectors(document_id: str) -> None:
 
 def search_documents(
     query: str,
-    limit: int = 5,
+    limit: int | None = None,
     document_id: str | None = None,
 ) -> list[dict]:
-    """Retrieve the most relevant document chunks for a query."""
+    """Retrieve the most relevant document chunks for a query across text and image-derived content."""
 
     if not query.strip():
         raise ValueError("Search query cannot be empty.")
+
+    if limit is None:
+        limit = int(os.getenv("RETRIEVAL_TOP_K", "5"))
 
     # Convert the user's question into an embedding.
     query_vector = model.encode(
@@ -136,7 +140,7 @@ def search_documents(
         normalize_embeddings=True,
     ).tolist()
 
-    # Optionally restrict search to one PDF.
+    # Optionally restrict search to one document, or search across all documents.
     query_filter = None
     if document_id:
         query_filter = Filter(
@@ -168,18 +172,23 @@ def search_documents(
         for point in results
     ]
 
+
 def index_document_with_tables(document_id: str) -> dict:
     """Index text chunks and extracted tables for one document."""
-
-    # Index regular text chunks first.
     text_result = index_document(document_id)
 
-    # Index extracted tables into the same Qdrant collection.
-    from app.services.table_indexing import index_document_tables
-
-    table_result = index_document_tables(document_id)
+    # If extracted tables exist in legacy path, index them as well
+    tables_path = BASE_DIR / "storage" / "processed" / f"{document_id}.tables.json"
+    indexed_tables = 0
+    if tables_path.exists():
+        try:
+            from app.services.table_indexing import index_document_tables
+            table_result = index_document_tables(document_id)
+            indexed_tables = table_result.get("indexed_tables", 0)
+        except Exception:
+            pass
 
     return {
         **text_result,
-        "indexed_tables": table_result["indexed_tables"],
+        "indexed_tables": indexed_tables,
     }

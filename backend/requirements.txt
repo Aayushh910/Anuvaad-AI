@@ -12,3 +12,9 @@ langchain-groq
 pytest
 PyMuPDF
 rank-bm25==0.2.2
+python-docx
+python-pptx
+openpyxl
+Pillow
+pytesseract
+pyyaml
