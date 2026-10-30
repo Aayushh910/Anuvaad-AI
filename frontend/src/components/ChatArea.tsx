@@ -229,7 +229,7 @@ export default function ChatArea({
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf,application/pdf"
+        accept=".pdf,.docx,.pptx,.xlsx,.xls,.csv,.txt,.md,.html,.png,.jpg,.jpeg,.webp"
         className="hidden"
         onChange={handleFileChange}
       />
@@ -767,3 +767,4 @@ export default function ChatArea({
     </div>
   )
 }
+

@@ -347,7 +347,7 @@ export default function LandingPage({
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,application/pdf"
+              accept=".pdf,.docx,.pptx,.xlsx,.xls,.csv,.txt,.md,.html,.png,.jpg,.jpeg,.webp"
               className="hidden"
               onChange={handleFileInputChange}
             />
@@ -667,3 +667,4 @@ export default function LandingPage({
     </div>
   )
 }
+

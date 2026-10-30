@@ -5,28 +5,26 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
-from docling.document_converter import DocumentConverter
+
 from fastapi import FastAPI, File, HTTPException, UploadFile, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
 from app.services.answering import generate_answer
-from app.services.chunking import chunk_document
+from app.services.chunking import chunk_segments, chunk_document
+from app.services.loaders import registry, compute_file_hash
 from app.services.vector_store import (
+    index_document,
     index_document_with_tables,
     delete_document_vectors,
 )
-from app.services.table_extraction import extract_tables
-from app.services.image_extraction import extract_pdf_images
-from app.services.vision import describe_image
-
-
 from app.core.config import settings
 
 
 app = FastAPI(
     title=settings.app_name,
-    description="Multimodal PDF RAG Assistant API",
-    version="0.1.0",
+    description="Multimodal Document RAG Assistant API",
+    version="0.2.0",
 )
 
 app.add_middleware(
@@ -48,12 +46,7 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB
 
-
-PROCESSED_DIR = (
-    Path(__file__).resolve().parents[1]
-    / "storage"
-    / "processed"
-)
+PROCESSED_DIR = Path(__file__).resolve().parents[1] / "storage" / "processed"
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
 IMAGE_ROOT = PROCESSED_DIR / "images"
@@ -66,8 +59,9 @@ CHUNKS_DIR.mkdir(parents=True, exist_ok=True)
 @app.get("/")
 def root():
     return {
-        "message": "Multimodal PDF RAG Assistant API",
+        "message": "Multimodal Document RAG Assistant API",
         "status": "running",
+        "supported_formats": registry.supported_extensions(),
     }
 
 
@@ -112,68 +106,45 @@ def list_documents():
             docs.append(data)
         except Exception:
             continue
-    # Sort by processed_at descending if available
     docs.sort(key=lambda d: d.get("processed_at", ""), reverse=True)
     return docs
 
 
-def background_describe_images(document_id: str, images_metadata_path: Path):
-    """Generate image descriptions asynchronously in the background."""
-    try:
-        if not images_metadata_path.exists():
-            return
-        records = json.loads(images_metadata_path.read_text(encoding="utf-8"))
-        changed = False
-        for record in records:
-            if not record.get("description") and record.get("image_path"):
-                try:
-                    record["description"] = describe_image(
-                        image_path=record["image_path"],
-                        page_number=record.get("page_number", 1),
-                    )
-                    changed = True
-                except Exception:
-                    pass
-        if changed:
-            images_metadata_path.write_text(
-                json.dumps(records, indent=2, ensure_ascii=False),
-                encoding="utf-8",
-            )
-    except Exception as exc:
-        print(f"Background image description failed for {document_id}: {exc}")
-
-
 @app.post("/api/v1/documents/upload", tags=["Documents"])
-def upload_pdf(
+def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
 ):
-    if not file.filename or Path(file.filename).suffix.lower() != ".pdf":
+    if not file.filename:
         raise HTTPException(
             status_code=400,
-            detail="Please upload a PDF file.",
+            detail="Filename is missing.",
         )
 
-    saved_path = UPLOAD_DIR / f"{uuid4().hex}.pdf"
+    ext = Path(file.filename).suffix.lower()
+    if ext not in registry.supported_extensions():
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported format '{ext}'. Supported: {', '.join(registry.supported_extensions())}",
+        )
+
+    temp_id = uuid4().hex
+    saved_path = UPLOAD_DIR / f"{temp_id}{ext}"
     total_size = 0
 
     try:
-        # Stream to disk and enforce the size limit.
+        # Stream file to disk and check file size limit
         with saved_path.open("wb") as destination:
             while True:
                 chunk = file.file.read(1024 * 1024)
-
                 if not chunk:
                     break
-
                 total_size += len(chunk)
-
                 if total_size > MAX_FILE_SIZE:
                     raise HTTPException(
                         status_code=413,
-                        detail="PDF exceeds the 25 MB limit.",
+                        detail="File exceeds the 25 MB limit.",
                     )
-
                 destination.write(chunk)
 
         if total_size == 0:
@@ -182,58 +153,91 @@ def upload_pdf(
                 detail="The uploaded file is empty.",
             )
 
-        # Fast layout, markdown, tables, and image extraction (without blocking on vision API)
-        proc_result = process_pdf_document(
-            saved_path,
-            file.filename,
-            total_size,
-            generate_descriptions_sync=False,
+        # Compute deterministic document ID based on file hash
+        file_hash = compute_file_hash(saved_path)
+        final_doc_id = file_hash[:16]
+        final_path = UPLOAD_DIR / f"{final_doc_id}{ext}"
+
+        if saved_path != final_path:
+            saved_path.replace(final_path)
+            saved_path = final_path
+
+        # Pluggable loader extraction
+        loader = registry.get_loader(saved_path, mime_type=file.content_type)
+        segments = loader.load(saved_path)
+
+        if not segments:
+            raise ValueError(f"No extractable text or visual content found in '{file.filename}'.")
+
+        # Create uniform chunks
+        chunks = chunk_segments(
+            segments=segments,
+            document_id=final_doc_id,
+            filename=file.filename,
         )
 
-        # Enrich image descriptions in the background if enabled
-        if (
-            os.getenv("DOCDUMIND_GENERATE_IMAGE_DESCRIPTIONS", "false").lower()
-            == "true"
-        ):
-            images_meta_path = PROCESSED_DIR / f"{saved_path.stem}.images.json"
-            background_tasks.add_task(
-                background_describe_images,
-                saved_path.stem,
-                images_meta_path,
-            )
+        # Index into vector database
+        index_result = index_document(final_doc_id)
 
-        # Auto-chunk and index document into Qdrant immediately so it is 100% ready for queries
-        try:
-            chunk_result = chunk_document(saved_path.stem)
-            index_result = index_document_with_tables(saved_path.stem)
-            chunk_count = chunk_result["chunk_count"]
-            indexed_chunks = index_result["indexed_chunks"]
-            indexed_tables = index_result["indexed_tables"]
-        except Exception as exc:
-            print(f"Warning: Auto-indexing during upload failed: {exc}")
-            chunk_count = 0
-            indexed_chunks = 0
-            indexed_tables = 0
+        # Build preview markdown
+        combined_markdown = "\n\n---\n\n".join(seg.text for seg in segments)
+        markdown_path = PROCESSED_DIR / f"{final_doc_id}.md"
+        markdown_path.write_text(combined_markdown, encoding="utf-8")
+
+        # Compatibility pages metadata
+        pages_data = [
+            {
+                "page_number": seg.page_or_slide_or_sheet,
+                "content_type": seg.content_type,
+                "text": seg.text,
+            }
+            for seg in segments
+        ]
+        pages_path = PROCESSED_DIR / f"{final_doc_id}.pages.json"
+        pages_path.write_text(
+            json.dumps(pages_data, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+        # Save document metadata
+        metadata = {
+            "document_id": final_doc_id,
+            "file_hash": file_hash,
+            "original_filename": file.filename,
+            "extension": ext,
+            "size_bytes": total_size,
+            "page_count": len(segments),
+            "character_count": len(combined_markdown),
+            "image_count": sum(1 for s in segments if s.metadata.get("has_visual_content")),
+            "chunk_count": len(chunks),
+            "indexed_chunks": index_result.get("indexed_chunks", len(chunks)),
+            "indexed_tables": 0,
+            "markdown_file": markdown_path.name,
+            "processed_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+        meta_path = PROCESSED_DIR / f"{final_doc_id}.json"
+        meta_path.write_text(
+            json.dumps(metadata, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
         return {
             "status": "success",
-            "document_id": saved_path.stem,
+            "document_id": final_doc_id,
             "filename": file.filename,
             "size_bytes": total_size,
-            "page_count": proc_result["page_count"],
-            "character_count": proc_result["character_count"],
-            "image_count": proc_result["image_count"],
-            "chunk_count": chunk_count,
-            "indexed_chunks": indexed_chunks,
-            "indexed_tables": indexed_tables,
-            "images_metadata_file": proc_result["images_metadata_file"],
-            "table_count": proc_result["table_count"],
-            "tables_metadata_file": proc_result["tables_metadata_file"],
-            "markdown_file": proc_result["markdown_file"],
-            "metadata_file": f"{saved_path.stem}.json",
-            "content_preview": proc_result["content_preview"],
-            "preview_truncated": proc_result["preview_truncated"],
-            "message": "PDF uploaded, processed, and indexed successfully.",
+            "page_count": len(segments),
+            "character_count": len(combined_markdown),
+            "image_count": metadata["image_count"],
+            "chunk_count": len(chunks),
+            "indexed_chunks": metadata["indexed_chunks"],
+            "indexed_tables": 0,
+            "markdown_file": markdown_path.name,
+            "metadata_file": meta_path.name,
+            "content_preview": combined_markdown[:10000],
+            "preview_truncated": len(combined_markdown) > 10000,
+            "message": "Document uploaded, processed, and indexed successfully.",
         }
 
     except HTTPException:
@@ -244,142 +248,26 @@ def upload_pdf(
         saved_path.unlink(missing_ok=True)
         raise HTTPException(
             status_code=500,
-            detail=f"PDF processing failed: {type(exc).__name__}: {exc}",
+            detail=f"Document processing failed: {type(exc).__name__}: {exc}",
         ) from exc
 
     finally:
         file.file.close()
 
 
-def process_pdf_document(
-    saved_path: Path,
-    filename: str,
-    total_size: int,
-    generate_descriptions_sync: bool = False,
-) -> dict:
-    """Convert PDF with Docling, extract images, tables, pages, and save metadata."""
-    converter = DocumentConverter()
-    result = converter.convert(str(saved_path))
-
-    markdown = result.document.export_to_markdown()
-    page_count = len(result.document.pages)
-
-    # Extract embedded images and preserve document/page metadata.
-    image_output_dir = IMAGE_ROOT / saved_path.stem
-
-    extracted_images = extract_pdf_images(
-        pdf_path=str(saved_path),
-        output_dir=str(image_output_dir),
-        generate_descriptions=generate_descriptions_sync,
-    )
-
-    images_metadata_path = (
-        PROCESSED_DIR / f"{saved_path.stem}.images.json"
-    )
-
-    images_metadata_path.write_text(
-        json.dumps(
-            extracted_images,
-            indent=2,
-            ensure_ascii=False,
-        ),
-        encoding="utf-8",
-    )
-
-    # Extract text with actual page numbers from Docling.
-    page_texts = {}
-
-    for item, _ in result.document.iterate_items():
-        text = getattr(item, "text", None)
-
-        if not text or not text.strip():
-            continue
-
-        provenance = getattr(item, "prov", None) or []
-
-        for source in provenance:
-            page_number = source.page_no
-
-            if page_number not in page_texts:
-                page_texts[page_number] = []
-
-            page_texts[page_number].append(text.strip())
-
-    pages_data = [
-        {
-            "page_number": page_number,
-            "text": "\n".join(texts),
-        }
-        for page_number, texts in sorted(page_texts.items())
-    ]
-
-    # Extract structured tables from the uploaded PDF.
-    extracted_tables = extract_tables(str(saved_path))
-
-    tables_metadata_path = (
-        PROCESSED_DIR / f"{saved_path.stem}.tables.json"
-    )
-
-    tables_metadata_path.write_text(
-        json.dumps(
-            extracted_tables,
-            indent=2,
-            ensure_ascii=False,
-        ),
-        encoding="utf-8",
-    )
-
-    # Save the complete extracted Markdown
-    markdown_path = PROCESSED_DIR / f"{saved_path.stem}.md"
-    markdown_path.write_text(markdown, encoding="utf-8")
-
-    pages_path = PROCESSED_DIR / f"{saved_path.stem}.pages.json"
-    pages_path.write_text(
-        json.dumps(pages_data, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
-
-    # Save document metadata
-    metadata = {
-        "document_id": saved_path.stem,
-        "original_filename": filename,
-        "size_bytes": total_size,
-        "page_count": page_count,
-        "character_count": len(markdown),
-        "image_count": len(extracted_images),
-        "images_metadata_file": images_metadata_path.name,
-        "table_count": len(extracted_tables),
-        "tables_metadata_file": tables_metadata_path.name,
-        "markdown_file": markdown_path.name,
-        "processed_at": datetime.now(timezone.utc).isoformat(),
-    }
-
-    metadata_path = PROCESSED_DIR / f"{saved_path.stem}.json"
-    metadata_path.write_text(
-        json.dumps(metadata, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
-
-    return {
-        **metadata,
-        "content_preview": markdown[:10000],
-        "preview_truncated": len(markdown) > 10000,
-    }
-
-
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
     document_id: str | None = None
-    limit: int = Field(default=5, ge=1, le=10)
+    limit: int | None = Field(default=None, ge=1, le=20)
 
 
 @app.post("/api/v1/documents/{document_id}/reindex", tags=["Documents"])
 @app.post("/api/v1/documents/{document_id}/index", tags=["Documents"])
-def reindex_pdf_document(
+def reindex_document(
     document_id: str,
     full_reprocess: bool = Query(
         default=False,
-        description="Whether to re-extract text, images, and tables from the source PDF before chunking and embedding",
+        description="Whether to reload and re-chunk the source document before embedding",
     ),
 ):
     if not document_id or not re.match(r"^[a-zA-Z0-9_-]+$", document_id):
@@ -388,79 +276,57 @@ def reindex_pdf_document(
             detail="Invalid document ID format.",
         )
 
-    pages_path = PROCESSED_DIR / f"{document_id}.pages.json"
-    saved_pdf = UPLOAD_DIR / f"{document_id}.pdf"
+    # Locate source file in storage
+    matching_uploads = list(UPLOAD_DIR.glob(f"{document_id}.*"))
+    saved_file = matching_uploads[0] if matching_uploads else None
     metadata_path = PROCESSED_DIR / f"{document_id}.json"
 
-    # If full reprocess is requested or pages.json is missing, attempt re-extracting from source PDF
-    if full_reprocess or not pages_path.exists():
-        if not saved_pdf.exists():
+    if full_reprocess or not (CHUNKS_DIR / f"{document_id}.json").exists():
+        if not saved_file or not saved_file.exists():
             raise HTTPException(
                 status_code=404,
-                detail=f"Cannot reprocess document '{document_id}': source PDF not found in storage.",
+                detail=f"Source file for '{document_id}' not found in storage.",
             )
-        try:
-            filename = f"{document_id}.pdf"
-            if metadata_path.exists():
-                try:
-                    existing_meta = json.loads(
-                        metadata_path.read_text(encoding="utf-8")
-                    )
-                    filename = existing_meta.get("original_filename", filename)
-                except Exception:
-                    pass
-            total_size = saved_pdf.stat().st_size
-            process_pdf_document(saved_pdf, filename, total_size)
-        except Exception as exc:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Document reprocessing failed: {type(exc).__name__}: {exc}",
-            ) from exc
 
-    try:
-        # Step 1: Create page-aware text chunks.
-        chunk_result = chunk_document(document_id)
-
-        # Step 2: Index text chunks and extracted tables into Qdrant.
-        index_result = index_document_with_tables(document_id)
-
-        # Update metadata timestamp and stats
+        filename = saved_file.name
         if metadata_path.exists():
             try:
                 meta = json.loads(metadata_path.read_text(encoding="utf-8"))
-                meta["processed_at"] = datetime.now(timezone.utc).isoformat()
-                meta["chunk_count"] = chunk_result["chunk_count"]
-                meta["indexed_chunks"] = index_result["indexed_chunks"]
-                meta["indexed_tables"] = index_result["indexed_tables"]
-                metadata_path.write_text(
-                    json.dumps(meta, indent=2, ensure_ascii=False),
-                    encoding="utf-8",
-                )
+                filename = meta.get("original_filename", filename)
             except Exception:
                 pass
 
-        return {
-            "status": "success",
-            "document_id": document_id,
-            "chunk_count": chunk_result["chunk_count"],
-            "indexed_chunks": index_result["indexed_chunks"],
-            "indexed_tables": index_result["indexed_tables"],
-            "collection": index_result["collection"],
-            "reprocessed": full_reprocess or not pages_path.exists(),
-            "message": "Document reindexed successfully.",
-        }
+        loader = registry.get_loader(saved_file)
+        segments = loader.load(saved_file)
+        chunks = chunk_segments(segments, document_id=document_id, filename=filename)
+    else:
+        chunks_file = CHUNKS_DIR / f"{document_id}.json"
+        chunks = json.loads(chunks_file.read_text(encoding="utf-8"))
 
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    index_result = index_document(document_id)
 
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if metadata_path.exists():
+        try:
+            meta = json.loads(metadata_path.read_text(encoding="utf-8"))
+            meta["processed_at"] = datetime.now(timezone.utc).isoformat()
+            meta["chunk_count"] = len(chunks)
+            meta["indexed_chunks"] = index_result["indexed_chunks"]
+            metadata_path.write_text(
+                json.dumps(meta, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
 
-    except Exception as exc:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Document reindexing failed: {type(exc).__name__}: {exc}",
-        ) from exc
+    return {
+        "status": "success",
+        "document_id": document_id,
+        "chunk_count": len(chunks),
+        "indexed_chunks": index_result["indexed_chunks"],
+        "collection": index_result["collection"],
+        "reprocessed": full_reprocess,
+        "message": "Document reindexed successfully.",
+    }
 
 
 @app.delete("/api/v1/documents/{document_id}", tags=["Documents"])
@@ -472,32 +338,20 @@ def delete_document(document_id: str):
             detail="Invalid document ID format.",
         )
 
-    metadata_file = PROCESSED_DIR / f"{document_id}.json"
-    upload_file = UPLOAD_DIR / f"{document_id}.pdf"
-    chunks_file = CHUNKS_DIR / f"{document_id}.json"
-
-    # Check if the document exists in storage
-    has_processed_files = list(PROCESSED_DIR.glob(f"{document_id}*"))
-    if not metadata_file.exists() and not upload_file.exists() and not has_processed_files:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Document with ID '{document_id}' not found.",
-        )
-
     # 1. Delete vectors from Qdrant
     try:
         delete_document_vectors(document_id)
     except Exception as exc:
-        # Do not fail document deletion if Qdrant removal logs warning
         print(f"Warning: Failed to delete vector embeddings for {document_id}: {exc}")
 
-    # 2. Delete uploaded PDF
-    upload_file.unlink(missing_ok=True)
+    # 2. Delete uploaded source files
+    for f in UPLOAD_DIR.glob(f"{document_id}.*"):
+        f.unlink(missing_ok=True)
 
     # 3. Delete chunk file
-    chunks_file.unlink(missing_ok=True)
+    (CHUNKS_DIR / f"{document_id}.json").unlink(missing_ok=True)
 
-    # 4. Delete extracted images folder
+    # 4. Delete extracted images folder if any
     image_dir = IMAGE_ROOT / document_id
     if image_dir.exists() and image_dir.is_dir():
         shutil.rmtree(image_dir, ignore_errors=True)
@@ -518,6 +372,7 @@ def delete_document(document_id: str):
         "message": f"Document '{document_id}' and all associated indexed data deleted successfully.",
     }
 
+
 @app.post("/ask")
 def ask_document(request: AskRequest):
     try:
@@ -527,5 +382,4 @@ def ask_document(request: AskRequest):
             limit=request.limit,
         )
     except ValueError as exc:
-        from fastapi import HTTPException
         raise HTTPException(status_code=400, detail=str(exc))
